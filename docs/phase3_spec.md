@@ -593,7 +593,97 @@ RICEFW หนึ่งรายการมีได้หลาย record ท�
 
 ---
 
-## 9. Checklist
+## 9. ✅ Class Generator — `YCL_RICEFW_VH_GEN`
+
+Class เดียวรัน 7 methods โหลดค่าเข้าทั้ง 14 tables — **idempotent** (`DELETE` แล้ว `INSERT` ทุกครั้ง
+รันซ้ำได้เสมอ) และ `COMMIT WORK` ครั้งเดียวตอนจบ (`main`) เพื่อให้เป็น all-or-nothing
+
+```
+รันผ่าน: right-click → Run As → ABAP Application (Console)  (หรือ F9)
+
+ผลลัพธ์ที่ควรได้:
+  YRICEFW_TYPE_VH        6 codes   12 texts
+  YRICEFW_DTYP_VH        3 codes    6 texts
+  YRICEFW_STAT_VH       10 codes   20 texts
+  YRICEFW_ROLE_VH        4 codes    8 texts
+  YRICEFW_OTYP_VH       75 codes  150 texts
+  YRICEFW_TTYP_VH        4 codes    8 texts
+  YRICEFW_TRST_VH        4 codes    8 texts
+
+รวม 106 check + 212 text = 318 records
+```
+
+**Language key ที่ใช้**: `E` (English) และ `2` (Thai) — ทั้งสองภาษาใช้ description เดียวกัน
+ไว้แปลไทยจริงทีหลังแค่แก้ constant `gc_lang_th` ถ้า key ผิด
+
+---
+
+## 10. ✅ CDS Value Help Views — ครบ 7 ตัว
+
+Interface view (`YI_*_VH`) join check table กับ text table ผ่าน `$session.system_language`
+กรอง `is_active = 'X'` ที่ WHERE — โครงเดียวกันทุกตัว ต่างกันแค่มี/ไม่มี `Criticality`
+
+| # | View | Table คู่ | Criticality | sizeCategory |
+|---|------|----------|:-----------:|:---:|
+| 1 | `YI_RICEFW_TYPE_VH` | `YRICEFW_TYPE_VH/VHT` | ❌ | `#XS` |
+| 2 | `YI_RICEFW_STAT_VH` | `YRICEFW_STAT_VH/VHT` | ✅ | `#XS` |
+| 3 | `YI_RICEFW_ROLE_VH` | `YRICEFW_ROLE_VH/VHT` | ❌ | `#XS` |
+| 4 | `YI_RICEFW_OTYP_VH` | `YRICEFW_OTYP_VH/VHT` | ❌ | `#XS` |
+| 5 | `YI_RICEFW_TTYP_VH` | `YRICEFW_TTYP_VH/VHT` | ❌ | `#XS` |
+| 6 | `YI_RICEFW_TRST_VH` | `YRICEFW_TRST_VH/VHT` | ✅ | `#XS` |
+| 7 | `YI_RICEFW_DTYP_VH` | `YRICEFW_DTYP_VH/VHT` | ❌ | `#XS` |
+
+### ตัวอย่าง (มี criticality) — `YI_RICEFW_STAT_VH`
+
+```abap
+@AccessControl.authorizationCheck: #NOT_REQUIRED
+@EndUserText.label: 'Overall Status - Value Help'
+@ObjectModel.resultSet.sizeCategory: #XS
+@Search.searchable: true
+define view entity YI_RICEFW_STAT_VH
+  as select from yricefw_stat_vh as Status
+  inner join   yricefw_stat_vht as Text
+    on  Text.overall_status = Status.overall_status
+    and Text.spras          = $session.system_language
+{
+  key Status.overall_status as OverallStatus,
+
+      @Semantics.text: true
+      @Search.defaultSearchElement: true
+      Text.description       as Description,
+
+      Status.sort_order       as SortOrder,
+      Status.criticality      as Criticality
+}
+where
+  Status.is_active = 'X'
+```
+
+อีก 6 ตัวโครงเดียวกัน เปลี่ยนแค่ชื่อ table/field และตัด `Criticality` ออกถ้าไม่มี
+
+### 10.1 Naming convention ที่วางไว้จากตัวแรก
+
+**DB table = `snake_case` เสมอ, CDS element = `UpperCamelCase` เสมอ** — ตาม pattern ของ
+ABAP Flight Reference Scenario (`CARRID` → `AirlineID`) จะใช้กับทุก view ตั้งแต่ Phase 4 เป็นต้นไป
+
+### 10.2 ⚠️ 2 บทเรียนที่เจอระหว่างสร้าง (บันทึกลง memory แล้ว)
+
+**`ORDER BY` ใช้ในตัว View Entity ไม่ได้** — CDS มองผลลัพธ์เป็น set ที่ไม่มีลำดับตามหลัก
+relational model ตอนแรกวางแผนไว้ (§ก่อนหน้า) ว่าจะ sort ด้วย `ORDER BY` แต่ activate ไม่ผ่าน
+(*"Unexpected keyword order"*) — เอา `SortOrder` field ไว้ในผลลัพธ์เฉยๆ แล้วค่อยคุมการเรียง
+ที่ metadata extension (`@UI.presentationVariant`) ตอน Phase 6/7 แทน
+
+**`@ObjectModel.resultSet.sizeCategory` มีแค่ 2 ค่า: `#XS` และ `#XXS`** — ไม่มี `#S`/`#M`/`#L`/`#XL`
+ตามที่คาดเดาได้จากชื่อ enum ใส่ `#S` แล้ว activate error *"Invalid annotation enum value"*
+ยืนยันด้วย Ctrl+Space ใน ADT — ใช้ `#XS` กับทุก view ในโปรเจกต์นี้ (ผลลัพธ์เล็กสุด 3 แถว
+ใหญ่สุด 30 แถวหลัง filter ก็ยังเหมาะกับ `#XS`)
+
+annotation นี้เป็นแค่ hint บอก Fiori Elements ว่าควรโหลดผลลัพธ์มาแสดงทีเดียวหมดหรือทำ paging
+ไม่กระทบความถูกต้องของข้อมูล ใส่ผิดก็แค่ UX ไม่เหมาะ ไม่ error ไม่ dump
+
+---
+
+## 11. Checklist
 
 - [x] `YRICEFW_TYPE_VH` · `YRICEFW_TYPE_VHT`
 - [x] `YRICEFW_STAT_VH` · `YRICEFW_STAT_VHT`
@@ -606,5 +696,7 @@ RICEFW หนึ่งรายการมีได้หลาย record ท�
 - [x] ใส่ Value Table ที่ `YD_DELIVERY_TYPE`
 - [x] **Transport (§8)** — 3 domains + 3 data elements + `YRICEFW_TRSP` + 4 value help tables
 - [x] ใส่ Value Table ที่ `YD_TRANSPORT_TYPE` · `YD_TRANSPORT_STATUS`
-- [ ] Class generator `YCL_RICEFW_VH_GEN` — load ค่าทั้ง 7 กลุ่ม (106 records)
-- [ ] CDS view 7 ตัว (join check + text, กรอง `is_active`)
+- [x] Class generator `YCL_RICEFW_VH_GEN` — load ค่าทั้ง 7 กลุ่ม 318 records (§9)
+- [x] CDS view 7 ตัว (§10) — activate ผ่านครบ
+
+**Phase 3 จบแล้ว ✅**

@@ -292,18 +292,21 @@ Object ทั้งหมดอยู่ใน `YRICEFW` (encapsulated ✅) ไ�
 
 | กลุ่ม | Object |
 |-------|--------|
-| **Domains** (9) | `YD_RICEFW_ID` `YD_RICEFW_TYPE` `YD_OVERALL_STATUS` `YD_ROLE` `YD_OBJECT_TYPE` |
-| **Data Elements** (9) | `YE_RICEFW_ID` `YE_RICEFW_TYPE` `YE_OVERALL_STATUS` `YE_ROLE` `YE_OBJECT_TYPE` |
-| **Tables — BO** (4) | `YRICEFW_HDR` `YRICEFW_OWNER` `YRICEFW_OBJ` `YRICEFW_TRSP` |
-| **Tables — Draft** (4) | `YRICEFW_HDR_D` `YRICEFW_OWNR_D` `YRICEFW_OBJ_D` `YRICEFW_TRSP_D` |
-| **Tables — Value Help** | ดู §7 (จำนวนขึ้นกับ pattern ที่เลือก) |
-| **CDS — Value Help** (7) | `YI_RICEFW_TYPE_VH` `YI_OVERALL_STATUS_VH` `YI_ROLE_VH` `YI_OBJECT_TYPE_VH` |
-| **CDS — BO** (4) | `YR_RICEFW` `YI_RICEFW_OWNER` `YI_RICEFW_OBJECT` `YI_RICEFW_TRANSPORT` |
-| **CDS — Projection** (4) | `YC_RICEFW` `YC_RICEFW_OWNER` `YC_RICEFW_OBJECT` |
-| **Behavior** (2) | `YR_RICEFW` (bdef) `YC_RICEFW` (bdef projection) |
-| **Class** (1) | `YBP_RICEFW` (behavior pool) |
-| **Metadata Ext** (4) | `YC_RICEFW` `YC_RICEFW_OWNER` `YC_RICEFW_OBJECT` |
-| **Service** (2) | `YUI_RICEFW` (srvd) `YUI_RICEFW_O4` (srvb) |
+| **Domains** (9) ✅ | `YD_RICEFW_ID` `YD_RICEFW_TYPE` `YD_DELIVERY_TYPE` `YD_OVERALL_STATUS` `YD_ROLE` `YD_OBJECT_TYPE` `YD_TRANSPORT_TYPE` `YD_TRANSPORT_ID` `YD_TRANSPORT_STATUS` |
+| **Data Elements** (9) ✅ | `YE_*` ตัวเดียวกับ domain ทุกตัว |
+| **Tables — BO** (4) ✅ | `YRICEFW_HDR` `YRICEFW_OWNER` `YRICEFW_OBJ` `YRICEFW_TRSP` |
+| **Tables — Draft** (4) ⏳ | `YRICEFW_HDR_D` `YRICEFW_OWNR_D` `YRICEFW_OBJ_D` `YRICEFW_TRSP_D` — generate ตอน Phase 5 |
+| **Tables — Value Help** (14) ✅ | 7 code lists × (check + text) — ดู `phase3_spec.md` §3–4 |
+| **Class — Generator** (1) ✅ | `YCL_RICEFW_VH_GEN` — โหลดค่า value help 318 records |
+| **CDS — Value Help** (7) ✅ | `YI_RICEFW_TYPE_VH` `YI_RICEFW_DTYP_VH` `YI_RICEFW_STAT_VH` `YI_RICEFW_ROLE_VH` `YI_RICEFW_OTYP_VH` `YI_RICEFW_TTYP_VH` `YI_RICEFW_TRST_VH` |
+| **CDS — BO** (4) ⏳ | `YR_RICEFW` `YI_RICEFW_OWNER` `YI_RICEFW_OBJECT` `YI_RICEFW_TRANSPORT` |
+| **CDS — Projection** (4) ⏳ | `YC_RICEFW` `YC_RICEFW_OWNER` `YC_RICEFW_OBJECT` `YC_RICEFW_TRANSPORT` |
+| **Behavior** (2) ⏳ | `YR_RICEFW` (bdef) `YC_RICEFW` (bdef projection) |
+| **Class — Behavior Pool** (1) ⏳ | `YBP_RICEFW` |
+| **Metadata Ext** (4) ⏳ | `YC_RICEFW` `YC_RICEFW_OWNER` `YC_RICEFW_OBJECT` `YC_RICEFW_TRANSPORT` |
+| **Service** (2) ⏳ | `YUI_RICEFW` (srvd) `YUI_RICEFW_O4` (srvb) |
+
+**รวม Phase 1–3: 44 objects** — 9 domains + 9 data elements + 4 tables + 14 value help tables + 1 generator class + 7 CDS views
 
 ### 4.2 GitHub / abapGit Mapping
 
@@ -417,16 +420,18 @@ yui_ricefw.srvd.srvdsrv        yui_ricefw_o4.srvb.xml
       ไป Phase 5 เพื่อทำพร้อม `validateRicefwId`
 - **DDL เต็ม + เหตุผล**: ดู `phase2_spec.md`
 
-### Phase 3 — Value Help Tables + Views  *(ขยายขอบเขตจากเดิม)*
-- [ ] เลือก pattern ของ check table (§7)
-- [ ] สร้าง check table (+ text table ถ้าเลือก pattern ที่มี)
-- [ ] Load ค่าเริ่มต้นตาม §3.3 — ผ่าน class generator หรือ table maintenance
-- [ ] CDS view: `YI_RICEFW_TYPE_VH` `YI_OVERALL_STATUS_VH` `YI_ROLE_VH` `YI_OBJECT_TYPE_VH`
-  - `@ObjectModel.resultSet.sizeCategory: #XS`
+### Phase 3 — Value Help Tables + Views ✅ จบแล้ว
+- [x] เลือก pattern: **Option A** — check table + text table แยกต่อ code list
+- [x] สร้างครบ 14 tables (7 code lists) — รวม transport ที่เพิ่มเข้ามาทีหลัง
+- [x] `YCL_RICEFW_VH_GEN` — class generator โหลด 318 records (106 check + 212 text)
+- [x] CDS view 7 ตัว: `YI_RICEFW_TYPE_VH` `YI_RICEFW_DTYP_VH` `YI_RICEFW_STAT_VH`
+      `YI_RICEFW_ROLE_VH` `YI_RICEFW_OTYP_VH` `YI_RICEFW_TTYP_VH` `YI_RICEFW_TRST_VH`
+  - `@ObjectModel.resultSet.sizeCategory: #XS` — **มีแค่ `#XS`/`#XXS` เท่านั้น** ไม่มี `#S`/`#M`/`#L`
   - `@Search.searchable` + `@Search.defaultSearchElement` บน description
   - `@Semantics.text: true` บน description
-  - `@UI.presentationVariant` sort ด้วย `sort_order`
-- **Deliverable**: preview ใน ADT เห็นค่าครบทั้ง 4 list
+  - ~~`ORDER BY`~~ **ใช้ไม่ได้ใน View Entity** — เก็บ `SortOrder` ไว้ในผลลัพธ์แทน
+    ควบคุมการเรียงที่ `@UI.presentationVariant` ตอน metadata extension (Phase 6/7)
+- **รายละเอียดเต็ม + 2 บทเรียนที่เจอ**: ดู `phase3_spec.md` §9–10
 
 ### Phase 4 — CDS Data Model (Interface + Root)
 - [ ] `YI_RICEFW_OWNER` — child view + `association to parent`
