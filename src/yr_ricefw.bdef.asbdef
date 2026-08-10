@@ -1,0 +1,153 @@
+managed implementation in class ybp_r_ricefw unique;
+strict ( 2 );
+with draft;
+
+define behavior for YR_RICEFW alias RicefwMaster
+persistent table yricefw_hdr
+draft table yricefw_hdr_d
+lock master
+total etag LastChangedAt
+authorization master ( instance )
+etag master LocalLastChangedAt
+{
+  mapping for yricefw_hdr corresponding
+  {
+    RicefwUUID         = ricefw_uuid;
+    RicefwID           = ricefw_id;
+    RicefwType         = ricefw_type;
+    DeliveryType       = delivery_type;
+    Description        = description;
+    OverallStatus      = overall_status;
+    PlanStart          = plan_start;
+    PlanFinish         = plan_finish;
+    Remark             = remark;
+    CreatedBy          = created_by;
+    CreatedAt          = created_at;
+    LastChangedBy      = last_changed_by;
+    LastChangedAt      = last_changed_at;
+    LocalLastChangedAt = local_last_changed_at;
+  }
+
+  field ( numbering : managed, readonly ) RicefwUUID;
+  field ( mandatory ) RicefwID, RicefwType, DeliveryType, Description;
+  field ( readonly ) CreatedBy, CreatedAt, LastChangedBy, LastChangedAt, LocalLastChangedAt;
+
+  create;
+  update;
+  delete;
+  determination setInitialStatus on modify { create; } //Initial status
+  validation validateRicefwId on save { create; field RicefwID; } //Check not empty/not dup
+  validation validateDates on save { create; update; field PlanStart, PlanFinish; }
+
+  draft action Activate optimized;
+  draft action Discard;
+  draft action Edit;
+  draft action Resume;
+  draft determine action Prepare
+  {
+    validation validateRicefwId; //RAP อยากให้ validation แสดง error แบบ real-time ตอน user ยังพิมพ์อยู่ (ก่อนกด Activate จริง) ผ่าน draft action Prepare
+    validation validateDates;
+  }
+
+  association _Owner     { create; with draft; }
+  association _Object    { create; with draft; }
+  association _Transport { create; with draft; }
+}
+
+define behavior for YI_RICEFW_OWNER alias Owner
+persistent table yricefw_owner
+draft table yricefw_owner_d
+lock dependent by _RicefwMaster
+authorization dependent by _RicefwMaster
+etag master LocalLastChangedAt
+{
+  mapping for yricefw_owner corresponding
+  {
+    OwnerUUID          = owner_uuid;
+    RicefwUUID         = ricefw_uuid;
+    OwnerID            = owner_id;
+    OwnerName          = owner_name;
+    Role               = role;
+    Progress           = progress;
+    CreatedBy          = created_by;
+    CreatedAt          = created_at;
+    LastChangedBy      = last_changed_by;
+    LocalLastChangedAt = local_last_changed_at;
+  }
+
+  field ( numbering : managed, readonly ) OwnerUUID;
+  field ( readonly ) RicefwUUID;
+  field ( mandatory ) OwnerID, OwnerName, Role;
+  field ( readonly ) CreatedBy, CreatedAt, LastChangedBy, LocalLastChangedAt;
+
+  update;
+  delete;
+  validation validateProgress on save { create; update; field Progress; }
+
+  association _RicefwMaster { with draft; }
+}
+
+define behavior for YI_RICEFW_OBJECT alias Object
+persistent table yricefw_obj
+draft table yricefw_obj_d
+lock dependent by _RicefwMaster
+authorization dependent by _RicefwMaster
+etag master LocalLastChangedAt
+{
+  mapping for yricefw_obj corresponding
+  {
+    ObjectUUID         = object_uuid;
+    RicefwUUID         = ricefw_uuid;
+    ObjectName         = object_name;
+    ObjectType         = object_type;
+    Description        = description;
+    CreatedBy          = created_by;
+    CreatedAt          = created_at;
+    LastChangedBy      = last_changed_by;
+    LocalLastChangedAt = local_last_changed_at;
+  }
+
+  field ( numbering : managed, readonly ) ObjectUUID;
+  field ( readonly ) RicefwUUID;
+  field ( mandatory ) ObjectName, ObjectType;
+  field ( readonly ) CreatedBy, CreatedAt, LastChangedBy, LocalLastChangedAt;
+
+  update;
+  delete;
+
+  association _RicefwMaster { with draft; }
+}
+
+define behavior for YI_RICEFW_TRANSPORT alias Transport
+persistent table yricefw_trsp
+draft table yricefw_trsp_d
+lock dependent by _RicefwMaster
+authorization dependent by _RicefwMaster
+etag master LocalLastChangedAt
+{
+  mapping for yricefw_trsp corresponding
+  {
+    TransportUUID      = transport_uuid;
+    RicefwUUID         = ricefw_uuid;
+    TransportType      = transport_type;
+    TransportID        = transport_id;
+    Description        = description;
+    TransportStatus    = transport_status;
+    ImportSequence     = import_sequence;
+    ReleasedOn         = released_on;
+    CreatedBy          = created_by;
+    CreatedAt          = created_at;
+    LastChangedBy      = last_changed_by;
+    LocalLastChangedAt = local_last_changed_at;
+  }
+
+  field ( numbering : managed, readonly ) TransportUUID;
+  field ( readonly ) RicefwUUID;
+  field ( mandatory ) TransportType, TransportID, TransportStatus;
+  field ( readonly ) CreatedBy, CreatedAt, LastChangedBy, LocalLastChangedAt;
+
+  update;
+  delete;
+
+  association _RicefwMaster { with draft; }
+}

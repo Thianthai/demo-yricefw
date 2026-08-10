@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<abapGit version="v1.0.0" serializer="LCL_OBJECT_MSAG" serializer_version="v1.0.0">
+ <asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
+  <asx:values>
+   <T100A>
+    <ARBGB>YRICEFW</ARBGB>
+    <MASTERLANG>E</MASTERLANG>
+    <STEXT>RICEFW Management - Messages</STEXT>
+   </T100A>
+   <T100>
+    <T100>
+     <SPRSL>E</SPRSL>
+     <ARBGB>YRICEFW</ARBGB>
+     <MSGNR>001</MSGNR>
+     <TEXT>RICEFW ID must not be initial</TEXT>
+    </T100>
+    <T100>
+     <SPRSL>E</SPRSL>
+     <ARBGB>YRICEFW</ARBGB>
+     <MSGNR>002</MSGNR>
+     <TEXT>RICEFW ID already exists</TEXT>
+    </T100>
+    <T100>
+     <SPRSL>E</SPRSL>
+     <ARBGB>YRICEFW</ARBGB>
+     <MSGNR>003</MSGNR>
+     <TEXT>Plan finish date must not be before plan start date</TEXT>
+    </T100>
+    <T100>
+     <SPRSL>E</SPRSL>
+     <ARBGB>YRICEFW</ARBGB>
+     <MSGNR>004</MSGNR>
+     <TEXT>Progress must not exceed 100</TEXT>
+    </T100>
+   </T100>
+  </asx:values>
+ </asx:abap>
+</abapGit>
