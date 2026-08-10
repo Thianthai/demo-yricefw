@@ -299,14 +299,14 @@ Object ทั้งหมดอยู่ใน `YRICEFW` (encapsulated ✅) ไ�
 | **Tables — Value Help** (14) ✅ | 7 code lists × (check + text) — ดู `phase3_spec.md` §3–4 |
 | **Class — Generator** (1) ✅ | `YCL_RICEFW_VH_GEN` — โหลดค่า value help 318 records |
 | **CDS — Value Help** (7) ✅ | `YI_RICEFW_TYPE_VH` `YI_RICEFW_DTYP_VH` `YI_RICEFW_STAT_VH` `YI_RICEFW_ROLE_VH` `YI_RICEFW_OTYP_VH` `YI_RICEFW_TTYP_VH` `YI_RICEFW_TRST_VH` |
-| **CDS — BO** (4) ⏳ | `YR_RICEFW` `YI_RICEFW_OWNER` `YI_RICEFW_OBJECT` `YI_RICEFW_TRANSPORT` |
+| **CDS — BO** (4) ✅ | `YR_RICEFW` `YI_RICEFW_OWNER` `YI_RICEFW_OBJECT` `YI_RICEFW_TRANSPORT` |
 | **CDS — Projection** (4) ⏳ | `YC_RICEFW` `YC_RICEFW_OWNER` `YC_RICEFW_OBJECT` `YC_RICEFW_TRANSPORT` |
 | **Behavior** (2) ⏳ | `YR_RICEFW` (bdef) `YC_RICEFW` (bdef projection) |
 | **Class — Behavior Pool** (1) ⏳ | `YBP_RICEFW` |
 | **Metadata Ext** (4) ⏳ | `YC_RICEFW` `YC_RICEFW_OWNER` `YC_RICEFW_OBJECT` `YC_RICEFW_TRANSPORT` |
 | **Service** (2) ⏳ | `YUI_RICEFW` (srvd) `YUI_RICEFW_O4` (srvb) |
 
-**รวม Phase 1–3: 44 objects** — 9 domains + 9 data elements + 4 tables + 14 value help tables + 1 generator class + 7 CDS views
+**รวม Phase 1–4: 48 objects** — 9 domains + 9 data elements + 4 tables + 14 value help tables + 1 generator class + 7 CDS value help views + 4 CDS BO views (1 root + 3 child)
 
 ### 4.2 GitHub / abapGit Mapping
 
@@ -433,14 +433,17 @@ yui_ricefw.srvd.srvdsrv        yui_ricefw_o4.srvb.xml
     ควบคุมการเรียงที่ `@UI.presentationVariant` ตอน metadata extension (Phase 6/7)
 - **รายละเอียดเต็ม + 2 บทเรียนที่เจอ**: ดู `phase3_spec.md` §9–10
 
-### Phase 4 — CDS Data Model (Interface + Root)
-- [ ] `YI_RICEFW_OWNER` — child view + `association to parent`
-- [ ] `YI_RICEFW_OBJECT` — child view + `association to parent`
-- [ ] `YI_RICEFW_TRANSPORT` — child view + `association to parent`
-- [ ] `YR_RICEFW` — root view entity + `composition [0..*]` ทั้ง 3 child
-- [ ] `YI_RICEFW_OWNER` — ประกาศ association `_User : [0..1] to I_User` ไว้ **แต่ยังไม่ expose field** (เผื่อ upgrade §2.3)
-- [ ] `@ObjectModel.dataCategory`, `@AccessControl.authorizationCheck: #NOT_REQUIRED` (ชั่วคราว)
-- **Deliverable**: preview root view ได้, expand ไป child ได้
+### Phase 4 — CDS Data Model (Interface + Root) ✅ จบแล้ว
+- [x] `YI_RICEFW_OWNER` — child view + `association to parent YR_RICEFW`
+- [x] `YI_RICEFW_OBJECT` — child view + `association to parent YR_RICEFW`
+- [x] `YI_RICEFW_TRANSPORT` — child view + `association to parent YR_RICEFW`
+- [x] `YR_RICEFW` — **`define root view entity`** + `composition [0..*]` ทั้ง 3 child (ไม่ต้องมี `on` — จับคู่จาก `association to parent` ของ child อัตโนมัติ)
+- [x] `YI_RICEFW_OWNER` — ประกาศ association `_User : [0..1] to I_User` ไว้ **แต่ยังไม่ expose field** (เผื่อ upgrade §2.3)
+- [x] `@AccessControl.authorizationCheck: #NOT_REQUIRED` (ชั่วคราว) ทุกตัว
+- [x] `@AbapCatalog.viewEnhancementCategory: [#NONE]` + `@Metadata.ignorePropagatedAnnotations: true` ทุกตัว
+- **Mass-activate**: ทั้ง 4 ไฟล์อ้างอิงกันเป็นวง (root ↔ child ผ่าน composition/association to parent)
+  ต้อง select ทั้ง 4 ไฟล์แล้ว activate พร้อมกันครั้งเดียว — activate ทีละไฟล์จะ error เพราะหา entity อีกฝั่งไม่เจอ
+- **รายละเอียดเต็ม + CDS source ทั้ง 4 ไฟล์**: ดู `phase4_spec.md`
 
 ### Phase 5 — Behavior Definition & Implementation
 - [ ] `YR_RICEFW` bdef — `managed; strict(2);` + `with draft;`
