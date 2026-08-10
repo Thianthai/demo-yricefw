@@ -295,18 +295,25 @@ Object ทั้งหมดอยู่ใน `YRICEFW` (encapsulated ✅) ไ�
 | **Domains** (9) ✅ | `YD_RICEFW_ID` `YD_RICEFW_TYPE` `YD_DELIVERY_TYPE` `YD_OVERALL_STATUS` `YD_ROLE` `YD_OBJECT_TYPE` `YD_TRANSPORT_TYPE` `YD_TRANSPORT_ID` `YD_TRANSPORT_STATUS` |
 | **Data Elements** (9) ✅ | `YE_*` ตัวเดียวกับ domain ทุกตัว |
 | **Tables — BO** (4) ✅ | `YRICEFW_HDR` `YRICEFW_OWNER` `YRICEFW_OBJ` `YRICEFW_TRSP` |
-| **Tables — Draft** (4) ⏳ | `YRICEFW_HDR_D` `YRICEFW_OWNR_D` `YRICEFW_OBJ_D` `YRICEFW_TRSP_D` — generate ตอน Phase 5 |
+| **Tables — Draft** (4) ✅ | `YRICEFW_HDR_D` `YRICEFW_OWNER_D` `YRICEFW_OBJ_D` `YRICEFW_TRSP_D` — generate จาก bdef quick-fix |
 | **Tables — Value Help** (14) ✅ | 7 code lists × (check + text) — ดู `phase3_spec.md` §3–4 |
+| **Index** (1) ✅ | `YRICEFW_HDR~Y01` — unique บน (`CLIENT`, `RICEFW_ID`) |
+| **Message Class** (1) ✅ | `YRICEFW` — message `001`–`004` |
 | **Class — Generator** (1) ✅ | `YCL_RICEFW_VH_GEN` — โหลดค่า value help 318 records |
+| **Class — Behavior Pool** (1) ✅ | `YBP_R_RICEFW` (ADT default naming — มี `_R_` บอกว่าเป็น root)
+  — handler class `LHC_RicefwMaster`, `LHC_Owner` |
 | **CDS — Value Help** (7) ✅ | `YI_RICEFW_TYPE_VH` `YI_RICEFW_DTYP_VH` `YI_RICEFW_STAT_VH` `YI_RICEFW_ROLE_VH` `YI_RICEFW_OTYP_VH` `YI_RICEFW_TTYP_VH` `YI_RICEFW_TRST_VH` |
 | **CDS — BO** (4) ✅ | `YR_RICEFW` `YI_RICEFW_OWNER` `YI_RICEFW_OBJECT` `YI_RICEFW_TRANSPORT` |
+| **Behavior — Root** (1) ✅ | `YR_RICEFW` (bdef) — managed, draft, 2 determination/validation ที่ root
+  + 1 validation ที่ owner |
 | **CDS — Projection** (4) ⏳ | `YC_RICEFW` `YC_RICEFW_OWNER` `YC_RICEFW_OBJECT` `YC_RICEFW_TRANSPORT` |
-| **Behavior** (2) ⏳ | `YR_RICEFW` (bdef) `YC_RICEFW` (bdef projection) |
-| **Class — Behavior Pool** (1) 🔄 | `YBP_R_RICEFW` (ADT default naming — มี `_R_` บอกว่าเป็น root) |
+| **Behavior — Projection** (1) ⏳ | `YC_RICEFW` (bdef projection) |
 | **Metadata Ext** (4) ⏳ | `YC_RICEFW` `YC_RICEFW_OWNER` `YC_RICEFW_OBJECT` `YC_RICEFW_TRANSPORT` |
 | **Service** (2) ⏳ | `YUI_RICEFW` (srvd) `YUI_RICEFW_O4` (srvb) |
 
-**รวม Phase 1–4: 48 objects** — 9 domains + 9 data elements + 4 tables + 14 value help tables + 1 generator class + 7 CDS value help views + 4 CDS BO views (1 root + 3 child)
+**รวม Phase 1–5: 63 objects** — 9 domains + 9 data elements + 4 tables + 4 draft tables +
+14 value help tables + 1 index + 1 message class + 2 classes (generator + behavior pool) +
+11 CDS views (7 value help + 4 BO) + 1 behavior definition (root, 4 block)
 
 ### 4.2 GitHub / abapGit Mapping
 
@@ -445,7 +452,7 @@ yui_ricefw.srvd.srvdsrv        yui_ricefw_o4.srvb.xml
   ต้อง select ทั้ง 4 ไฟล์แล้ว activate พร้อมกันครั้งเดียว — activate ทีละไฟล์จะ error เพราะหา entity อีกฝั่งไม่เจอ
 - **รายละเอียดเต็ม + CDS source ทั้ง 4 ไฟล์**: ดู `phase4_spec.md`
 
-### Phase 5 — Behavior Definition & Implementation 🔄
+### Phase 5 — Behavior Definition & Implementation ✅
 - [x] **5.1 — bdef ฉบับ minimal + draft tables + behavior pool skeleton** ✅
   - `YR_RICEFW` bdef — `managed; strict(2); with draft;` — mass-activate ผ่าน
   - Draft tables generate ผ่าน quick fix: `YRICEFW_HDR_D` `YRICEFW_OWNER_D` `YRICEFW_OBJ_D` `YRICEFW_TRSP_D`
@@ -467,8 +474,17 @@ yui_ricefw.srvd.srvdsrv        yui_ricefw_o4.srvb.xml
   - เจอบทเรียนใหม่ 2 จุด (`FIELDS` เว้นวรรคไม่ใช่ comma, `LOOP...WHERE` เทียบ 2 field ในแถว
     เดียวกันไม่ได้) + ข้อสังเกตว่า child-entity validation ไม่จำเป็นต้องผูก `Prepare` เสมอไป
     (ต่างจากที่สรุปไว้ตอน 5.3) — รายละเอียด: `phase5_spec.md` §5.4
-- [ ] **5.5** — Unique index บน `ricefw_id` (เลื่อนมาจาก Phase 2 — ทำพร้อม validation)
-- [ ] Smoke test class `YCL_RICEFW_EML_TEST` (console, ยิง EML ตรง)
+- [x] **5.5** — Unique index `YRICEFW_HDR~Y01` บน (`CLIENT`, `RICEFW_ID`) — activate ผ่าน
+  - Table Index เป็น **form editor** ไม่ใช่ code-based · naming scheme บังคับ
+    `[tablename]~[indexId]` · unique index ต้องมี client field ด้วยเสมอ
+  - ⚠️ client field ของ `yricefw_hdr` ชื่อ **`CLIENT`** ไม่ใช่ `MANDT` — เพราะ DDL ต้นทางตั้งชื่อ
+    field เองว่า `client` ตอน Phase 2 ชื่อ physical column จึงตามชื่อที่ตั้งเอง ไม่ใช่ธรรมเนียม
+    มาตรฐานของ SAP โดยอัตโนมัติ (draft table ที่ ADT generate เองใช้ชื่อ `MANDT` ซึ่งเป็น
+    คนละ object กัน อย่าอ้างอิงข้ามกัน) — รายละเอียด: `phase5_spec.md` §5.5
+- [ ] Smoke test class `YCL_RICEFW_EML_TEST` (console, ยิง EML ตรง) — ไม่บังคับสำหรับปิด
+      Phase 5 แนะนำก่อนเริ่ม Phase 6
+
+**Phase 5 จบแล้ว ✅** — bdef, behavior pool, draft tables, message class, unique index ครบ
 
 > ❌ **ไม่มี number range** — `ricefw_id` เป็น free text ที่ user กรอกเอง
 > ความถูกต้องอยู่ที่ `validateRicefwId` + unique index แทน

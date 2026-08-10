@@ -528,6 +528,65 @@ validation ระดับ **child** ระบบจัดการให้เ�
 
 ---
 
+## 5.5 — Unique Index บน `ricefw_id` ✅
+
+Object: **`YRICEFW_HDR~Y01`** (Table Index) — ด่านสุดท้ายที่ database กัน `RICEFW ID` ซ้ำ
+เผื่อกรณี race condition ที่ `validateRicefwId` (application layer) หลุดได้ (ดู design.md
+เรื่อง "เร็วขึ้น" vs "ถูกต้องเสมอ" — index ตัวนี้เป็นเรื่อง data integrity ไม่ใช่ performance
+จึงไม่ใช่ index ที่ถูกยกเลิกไปตอน Phase 2)
+
+### เป็น form editor ไม่ใช่ code-based
+
+ต่างจาก CDS/bdef ที่ผ่านมา — **Table Index เป็น form** (เหมือน Domain/Data Element ตอน
+Phase 1) ไม่มี DDL source ให้เขียนเอง
+
+### ขั้นตอนที่ใช้ได้จริง
+
+**1. สร้าง object**: `New → Other ABAP Repository Object` → ค้นหา **"Index"** →
+เลือก **"Table Index"** (ไม่ใช่ "Extension Index" ซึ่งมีไว้สำหรับเพิ่ม index ให้ table ที่ไม่ใช่
+ของเราเอง)
+
+**2. ตั้งชื่อตาม scheme บังคับ**: `[tablename]~[indexId]`
+
+```
+Name: YRICEFW_HDR~Y01
+```
+
+ชื่อ table ต้องอยู่ในชื่อ object เลย ไม่มีช่องแยกให้กรอก table ต่างหาก
+
+**3. กรอก form**:
+- ✅ ติ๊ก **"Unique Index"**
+- ไม่ติ๊ก "Index on Table Buffer only" / "Fuzzy Search Index"
+- Index Fields (เรียงตามลำดับนี้):
+  1. `CLIENT`
+  2. `RICEFW_ID`
+
+### ⚠️ บทเรียน: ชื่อ client field ไม่ใช่ `MANDT` เสมอไป
+
+ตอนแรกลองใส่ `MANDT` (field client มาตรฐานของ SAP) แล้วเจอ error สองชั้น:
+
+```
+Index YRICEFW_HDR-Y01 (field MANDT is not in the table)
+Index YRICEFW_HDR-Y01 (client field required for unique index)
+```
+
+**สาเหตุ**: `MANDT` เป็นชื่อที่เห็นจาก **draft table** (`YRICEFW_HDR_D`) ซึ่งเป็น object ที่
+ADT generate เองอัตโนมัติ ใช้ชื่อ field ตามธรรมเนียมของมันเอง — **ไม่เกี่ยวกับ table ต้นทาง
+ที่เราเขียน DDL เอง**
+
+ย้อนกลับไปดู DDL ของ `yricefw_hdr` (Phase 2) เราตั้งชื่อ field เองว่า `client` ไม่ใช่ `mandt`:
+
+```abap
+key client : abap.clnt not null;
+```
+
+พอ activate แล้วชื่อ column จริงในระบบเลยกลายเป็น **`CLIENT`** (ตัวใหญ่ ตามชื่อที่เราตั้งเอง)
+ไม่ใช่ `MANDT` — **ชื่อ physical column ตามชื่อที่ตั้งใน DDL source เสมอ ไม่ใช่ตามธรรมเนียม
+มาตรฐานของ SAP โดยอัตโนมัติ** ถ้าอยากรู้ชื่อ field จริงของ table ไหน ให้เปิด DDL source ของ
+table นั้นดูตรงๆ ดีที่สุด อย่าอ้างอิงจาก draft table หรือ object อื่นที่ generate มา
+
+---
+
 ## Checklist
 
 - [x] `YR_RICEFW` bdef — 4 block (root + 3 child) mass-activate ผ่าน 0 error 0 warning
@@ -539,5 +598,8 @@ validation ระดับ **child** ระบบจัดการให้เ�
       authorization warning ที่ตั้งใจเลื่อนไป Phase 9)
 - [x] **5.4** Validation `validateDates` `validateProgress` — activate ผ่าน 0 error 0 warning
       (`validateOwner` ตัดออก — ซ้ำซ้อนกับ `field ( mandatory )` จาก 5.1)
-- [ ] **5.5** Unique index บน `ricefw_id`
-- [ ] Smoke test class `YCL_RICEFW_EML_TEST`
+- [x] **5.5** Unique index `YRICEFW_HDR~Y01` บน (`CLIENT`, `RICEFW_ID`) — activate ผ่าน
+- [ ] Smoke test class `YCL_RICEFW_EML_TEST` — ยังไม่ทำ (ไม่บังคับสำหรับปิด Phase 5
+      แต่แนะนำก่อนเริ่ม Phase 6)
+
+**Phase 5 จบแล้ว ✅**
