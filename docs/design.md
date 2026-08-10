@@ -302,7 +302,7 @@ Object ทั้งหมดอยู่ใน `YRICEFW` (encapsulated ✅) ไ�
 | **CDS — BO** (4) ✅ | `YR_RICEFW` `YI_RICEFW_OWNER` `YI_RICEFW_OBJECT` `YI_RICEFW_TRANSPORT` |
 | **CDS — Projection** (4) ⏳ | `YC_RICEFW` `YC_RICEFW_OWNER` `YC_RICEFW_OBJECT` `YC_RICEFW_TRANSPORT` |
 | **Behavior** (2) ⏳ | `YR_RICEFW` (bdef) `YC_RICEFW` (bdef projection) |
-| **Class — Behavior Pool** (1) ⏳ | `YBP_RICEFW` |
+| **Class — Behavior Pool** (1) 🔄 | `YBP_R_RICEFW` (ADT default naming — มี `_R_` บอกว่าเป็น root) |
 | **Metadata Ext** (4) ⏳ | `YC_RICEFW` `YC_RICEFW_OWNER` `YC_RICEFW_OBJECT` `YC_RICEFW_TRANSPORT` |
 | **Service** (2) ⏳ | `YUI_RICEFW` (srvd) `YUI_RICEFW_O4` (srvb) |
 
@@ -445,21 +445,30 @@ yui_ricefw.srvd.srvdsrv        yui_ricefw_o4.srvb.xml
   ต้อง select ทั้ง 4 ไฟล์แล้ว activate พร้อมกันครั้งเดียว — activate ทีละไฟล์จะ error เพราะหา entity อีกฝั่งไม่เจอ
 - **รายละเอียดเต็ม + CDS source ทั้ง 4 ไฟล์**: ดู `phase4_spec.md`
 
-### Phase 5 — Behavior Definition & Implementation
-- [ ] `YR_RICEFW` bdef — `managed; strict(2);` + `with draft;`
-- [ ] Generate draft tables ผ่าน ADT quick fix
-- [ ] Field characteristics:
-  - `readonly` — admin fields ทั้งหมด (`created_*`, `last_changed_*`, `local_last_changed_at`) + UUID ทุกตัว
-  - `mandatory` — `ricefw_id`, `description`, `ricefw_type`
-- [ ] `numbering : managed` สำหรับ UUID ทุก entity (early numbering)
-- [ ] `etag master local_last_changed_at` ทุก entity + `total etag last_changed_at` ที่ root
-- [ ] Behavior pool `YBP_RICEFW`
-  - Determination `setInitialStatus` — default `overall_status = 10` ตอน create
-  - Validation `validateRicefwId` — ห้ามว่าง + **ห้ามซ้ำกับ instance อื่น** (เพราะ user กรอกเอง)
-  - Validation `validateDates` — `plan_finish >= plan_start`
-  - Validation `validateProgress` — `progress` อยู่ในช่วง 0–100
-  - Validation `validateOwner` — `owner_id` / `owner_name` ห้ามว่าง (ไม่เช็คกับ `I_User` — owner อาจเป็น external)
-- **Deliverable**: EML test class ใน `ybp_ricefw.clas.testclasses.abap` ผ่าน
+### Phase 5 — Behavior Definition & Implementation 🔄
+- [x] **5.1 — bdef ฉบับ minimal + draft tables + behavior pool skeleton** ✅
+  - `YR_RICEFW` bdef — `managed; strict(2); with draft;` — mass-activate ผ่าน
+  - Draft tables generate ผ่าน quick fix: `YRICEFW_HDR_D` `YRICEFW_OWNER_D` `YRICEFW_OBJ_D` `YRICEFW_TRSP_D`
+    (ตั้งชื่อ owner แบบเต็ม ไม่ย่อ — 15 ตัวอักษร ไม่เกิน limit)
+  - Behavior pool `YBP_R_RICEFW` (ADT default name, มี `_R_` บอกว่าเป็น root) + handler class `LHC_RicefwMaster`
+  - `field ( numbering : managed, readonly )` บน UUID ทุก entity
+  - `field ( mandatory )` ตามที่ตกลง — root เพิ่ม `DeliveryType` เข้าไปด้วย
+  - `mapping for <table> corresponding { ... }` — **ต้องมีทุก entity** เพราะ managed persistence
+    จับคู่ field ด้วย lowercase ตรงตัว ไม่อ่าน `as` alias ของ CDS view (รายละเอียด: `phase5_spec.md`)
+  - **รายละเอียดเต็ม + bdef source ทั้ง 4 block**: ดู `phase5_spec.md`
+- [x] **5.2** — Determination `setInitialStatus` (default `OverallStatus = 'OPN'`) — activate ผ่าน
+- [x] **5.3** — Validation `validateRicefwId` (ห้ามว่าง + ห้ามซ้ำ) — activate ผ่าน 0 error 0 warning
+  - เจอ 7 จุดที่ syntax เดามาผิดระหว่างทาง (`IMPORTING`, `%all`, `FILTER USING KEY`,
+    `if_abap_boolean`, `abap_true` ผิด type, `%state_area`, ยังไม่ผูก `Prepare`) — รายละเอียด
+    เต็มพร้อมของที่ถูกจริง: ดู `phase5_spec.md` §5.3
+  - [x] Message Class `YRICEFW` สร้างแล้ว — message `001`/`002`
+- [x] **5.4** — Validation `validateDates` `validateProgress` — activate ผ่าน 0 error 0 warning
+  (`validateOwner` ตัดออก — ซ้ำซ้อนกับ `field ( mandatory )` จาก 5.1) · message `003`/`004`
+  - เจอบทเรียนใหม่ 2 จุด (`FIELDS` เว้นวรรคไม่ใช่ comma, `LOOP...WHERE` เทียบ 2 field ในแถว
+    เดียวกันไม่ได้) + ข้อสังเกตว่า child-entity validation ไม่จำเป็นต้องผูก `Prepare` เสมอไป
+    (ต่างจากที่สรุปไว้ตอน 5.3) — รายละเอียด: `phase5_spec.md` §5.4
+- [ ] **5.5** — Unique index บน `ricefw_id` (เลื่อนมาจาก Phase 2 — ทำพร้อม validation)
+- [ ] Smoke test class `YCL_RICEFW_EML_TEST` (console, ยิง EML ตรง)
 
 > ❌ **ไม่มี number range** — `ricefw_id` เป็น free text ที่ user กรอกเอง
 > ความถูกต้องอยู่ที่ `validateRicefwId` + unique index แทน
