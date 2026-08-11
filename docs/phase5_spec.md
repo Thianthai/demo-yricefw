@@ -587,6 +587,606 @@ table นั้นดูตรงๆ ดีที่สุด อย่าอ้
 
 ---
 
+## 5.6 — Smoke Test `YCL_RICEFW_EML_TEST` (EML, Stage 1: root only) ✅
+
+Console class (`IF_OO_ADT_CLASSRUN~MAIN`) ทดสอบ CRUD + validation ของ `YR_RICEFW` ผ่าน EML
+โดยตรง (ไม่ผ่าน UI) — ครอบคลุมเฉพาะ root entity ก่อน (deep-create ของ child ทำต่อใน 5.7)
+
+### โครงสร้าง class (ฉบับสุดท้าย — หลัง refactor แยก stage เป็น private method)
+
+แต่ละ stage เป็น private method แยกกัน `MAIN` เหลือแค่ 2 บรรทัด อ่านแล้วเห็นโครงทั้งหมดทันที
+
+```abap
+CLASS ycl_ricefw_eml_test DEFINITION
+  PUBLIC FINAL
+  CREATE PUBLIC.
+
+  PUBLIC SECTION.
+    INTERFACES if_oo_adt_classrun.
+
+  PRIVATE SECTION.
+    METHODS stage1_root_only
+      IMPORTING out TYPE REF TO if_oo_adt_classrun_out.
+
+    METHODS stage2_deep_create
+      IMPORTING out TYPE REF TO if_oo_adt_classrun_out.
+
+ENDCLASS.
+
+
+CLASS ycl_ricefw_eml_test IMPLEMENTATION.
+
+  METHOD if_oo_adt_classrun~main.
+
+    stage1_root_only( out = out ).
+    stage2_deep_create( out = out ).
+
+  ENDMETHOD.
+```
+
+> ⚠️ **ผลข้างเคียงของ refactor ที่ต้องระวัง**: ตอน Stage 1 อยู่ใน `MAIN` โดยตรง การ `RETURN`
+> ที่ error path = จบโปรแกรมเลย ไม่ต้อง `ROLLBACK ENTITIES` ก็ได้ — แต่พอแยกเป็น method
+> การ `RETURN` แค่ออกจาก method **แล้ว Stage 2 ยังรันต่อ** ถ้าไม่ rollback ของค้างจาก Stage 1
+> จะไปทำ Stage 2 พังตาม (บทเรียนเดิมจากเคส `BAD1` แค่ย้ายบริบท) จึงต้องเพิ่ม
+> `ROLLBACK ENTITIES.` ก่อน `RETURN.` ทุกจุดใน `stage1_root_only`
+
+### Source `stage1_root_only` (รันผ่านครบทุกจุด)
+
+```abap
+  METHOD stage1_root_only.
+
+    out->write( '=== RICEFW Smoke Test — Stage 1: root only ===' ).
+    out->write( `` ).
+
+    "----------------------------------------------------------------
+    " 0) Pre-cleanup — ลบทุก record ในตารางก่อนเริ่ม test (clean slate)
+    "    NOTE: ลบ root จะ cascade ลบ child (_Owner/_Object/_Transport) ไปด้วย
+    "    เพราะ composition + lock dependent by _RicefwMaster
+    "----------------------------------------------------------------
+    SELECT RicefwUUID
+      FROM YR_RICEFW
+      INTO TABLE @DATA(lt_old_uuid).
+
+    IF lt_old_uuid IS NOT INITIAL.
+      out->write( |พบ record เก่าค้างอยู่ { lines( lt_old_uuid ) } รายการ — ลบทั้งหมดก่อนเริ่ม test| ).
+
+      MODIFY ENTITIES OF yr_ricefw
+        ENTITY RicefwMaster
+          DELETE
+          FROM VALUE #( FOR ls_uuid IN lt_old_uuid
+                         ( %tky = VALUE #( RicefwUUID = ls_uuid-RicefwUUID ) ) )
+        FAILED   DATA(ls_pre_failed)
+        REPORTED DATA(ls_pre_reported).
+
+      COMMIT ENTITIES
+        RESPONSE OF yr_ricefw
+        FAILED   DATA(ls_pre_commit_failed)
+        REPORTED DATA(ls_pre_commit_reported).
+
+      LOOP AT ls_pre_commit_reported-ricefwmaster INTO DATA(ls_pre_r).
+        IF ls_pre_r-%msg IS BOUND.
+          out->write( |  REPORTED: { ls_pre_r-%msg->if_message~get_text( ) }| ).
+        ENDIF.
+      ENDLOOP.
+
+      IF ls_pre_commit_failed-ricefwmaster IS INITIAL.
+        out->write( 'ลบ record เก่าทั้งหมดสำเร็จ' ).
+      ELSE.
+        out->write( |ลบไม่สำเร็จ { lines( ls_pre_commit_failed-ricefwmaster ) } รายการ — test ถัดไปอาจ fail ที่ CREATE (duplicate)| ).
+      ENDIF.
+    ELSE.
+      out->write( 'ไม่พบ record เก่าค้างอยู่ — เริ่ม test ได้เลย' ).
+    ENDIF.
+
+    out->write( `` ).
+
+    "----------------------------------------------------------------
+    " 1) Create a RICEFW master (root entity only, ยังไม่มี child)
+    "----------------------------------------------------------------
+    MODIFY ENTITIES OF yr_ricefw
+      ENTITY RicefwMaster
+        CREATE FIELDS ( RicefwID RicefwType DeliveryType Description
+                         PlanStart PlanFinish )
+        WITH VALUE #( ( %cid         = 'ROOT1'
+                         RicefwID     = 'SMOKE-001'
+                         RicefwType   = 'RPT'
+                         DeliveryType = 'NEW'
+                         Description  = 'Smoke test record'
+                         PlanStart    = '20260101'
+                         PlanFinish   = '20260201' ) )
+      MAPPED   DATA(ls_mapped)
+      FAILED   DATA(ls_failed)
+      REPORTED DATA(ls_reported).
+
+    out->write( '--- After CREATE (modify buffer) ---' ).
+    LOOP AT ls_failed-ricefwmaster INTO DATA(ls_f1).
+      out->write( |  FAILED key: { ls_f1-%tky-RicefwUUID }| ).
+    ENDLOOP.
+    LOOP AT ls_reported-ricefwmaster INTO DATA(ls_r1).
+      IF ls_r1-%msg IS BOUND.
+        out->write( |  REPORTED: { ls_r1-%msg->if_message~get_text( ) }| ).
+      ENDIF.
+    ENDLOOP.
+
+    IF ls_failed-ricefwmaster IS NOT INITIAL.
+      out->write( 'CREATE failed — stopping.' ).
+      ROLLBACK ENTITIES.
+      RETURN.
+    ENDIF.
+
+    "----------------------------------------------------------------
+    " 2) Commit เพื่อ persist จริง — "on save" ทั้งหมด (determination/validation)
+    "    จะรันจริงตอนนี้ ไม่ใช่ตอน MODIFY ENTITIES
+    "----------------------------------------------------------------
+    COMMIT ENTITIES
+      RESPONSE OF yr_ricefw
+      FAILED   DATA(ls_commit_failed)
+      REPORTED DATA(ls_commit_reported).
+
+    out->write( `` ).
+    out->write( '--- After COMMIT ---' ).
+    LOOP AT ls_commit_failed-ricefwmaster INTO DATA(ls_f2).
+      out->write( |  FAILED key: { ls_f2-%tky-RicefwUUID }| ).
+    ENDLOOP.
+    LOOP AT ls_commit_reported-ricefwmaster INTO DATA(ls_r2).
+      IF ls_r2-%msg IS BOUND.
+        out->write( |  REPORTED: { ls_r2-%msg->if_message~get_text( ) }| ).
+      ENDIF.
+    ENDLOOP.
+
+    IF ls_commit_failed-ricefwmaster IS NOT INITIAL.
+      out->write( 'COMMIT failed — stopping.' ).
+      ROLLBACK ENTITIES.
+      RETURN.
+    ENDIF.
+
+    DATA(ls_new_key) = VALUE #( ls_mapped-ricefwmaster[ KEY cid COMPONENTS %cid = 'ROOT1' ]-%tky OPTIONAL ).
+    out->write( |Committed. RicefwUUID = { ls_new_key-RicefwUUID }| ).
+
+    "----------------------------------------------------------------
+    " 3) Read กลับมาเช็คว่า determination ทำงานจริง (OverallStatus ต้องเป็น OPN)
+    "----------------------------------------------------------------
+    READ ENTITIES OF yr_ricefw
+      ENTITY RicefwMaster
+        ALL FIELDS
+        WITH VALUE #( ( %tky = ls_new_key ) )
+      RESULT DATA(lt_check).
+
+    LOOP AT lt_check INTO DATA(ls_check).
+      out->write( |RicefwID = { ls_check-RicefwID }  OverallStatus = { ls_check-OverallStatus }| ).
+    ENDLOOP.
+
+    "----------------------------------------------------------------
+    " 4) Negative test — RicefwID ว่างต้องถูกปฏิเสธ
+    "    validation เป็น on save ต้อง commit ก่อนถึงจะรันจริง
+    "----------------------------------------------------------------
+    out->write( `` ).
+    out->write( '=== Negative test: empty RicefwID ===' ).
+
+    MODIFY ENTITIES OF yr_ricefw
+      ENTITY RicefwMaster
+        CREATE FIELDS ( RicefwType DeliveryType Description )
+        WITH VALUE #( ( %cid         = 'BAD1'
+                         RicefwType   = 'RPT'
+                         DeliveryType = 'NEW'
+                         Description  = 'Should fail' ) )
+      FAILED   DATA(ls_failed2)
+      REPORTED DATA(ls_reported2).
+
+    out->write( '--- After CREATE (modify buffer, ยังไม่ commit) ---' ).
+    out->write( |  FAILED entries: { lines( ls_failed2-ricefwmaster ) }| ).
+    out->write( |  REPORTED entries: { lines( ls_reported2-ricefwmaster ) }| ).
+    out->write( '  (คาดว่าว่างทั้งคู่ — validation ยังไม่รันจนกว่าจะ commit)' ).
+
+    COMMIT ENTITIES
+      RESPONSE OF yr_ricefw
+      FAILED   DATA(ls_commit_failed2)
+      REPORTED DATA(ls_commit_reported2).
+
+    out->write( `` ).
+    out->write( '--- After COMMIT (validation ควรรันแล้ว) ---' ).
+    LOOP AT ls_commit_failed2-ricefwmaster INTO DATA(ls_f3).
+      out->write( |  FAILED key: { ls_f3-%tky-RicefwUUID }| ).
+    ENDLOOP.
+    LOOP AT ls_commit_reported2-ricefwmaster INTO DATA(ls_r3).
+      IF ls_r3-%msg IS BOUND.
+        out->write( |  REPORTED: { ls_r3-%msg->if_message~get_text( ) }| ).
+      ENDIF.
+    ENDLOOP.
+
+    IF ls_commit_failed2-ricefwmaster IS NOT INITIAL.
+      out->write( 'Correctly rejected at COMMIT.' ).
+
+      "-- record ที่ fail validation ยังค้างอยู่ใน RAP transactional buffer
+      "-- ถ้าไม่ rollback จะถูกเอามา retry ซ้ำตอน COMMIT ENTITIES ครั้งถัดไป
+      ROLLBACK ENTITIES.
+    ELSE.
+      out->write( 'WARNING: empty RicefwID was NOT rejected even after commit!' ).
+    ENDIF.
+
+    "----------------------------------------------------------------
+    " 5) Cleanup — ลบ test record ทิ้ง กันรันซ้ำแล้วชน unique index
+    "----------------------------------------------------------------
+    out->write( `` ).
+    MODIFY ENTITIES OF yr_ricefw
+      ENTITY RicefwMaster
+        DELETE
+        FROM VALUE #( ( %tky = ls_new_key ) )
+      FAILED   DATA(ls_del_failed)
+      REPORTED DATA(ls_del_reported).
+
+    COMMIT ENTITIES
+      RESPONSE OF yr_ricefw
+      FAILED   DATA(ls_del_commit_failed)
+      REPORTED DATA(ls_del_commit_reported).
+
+    out->write( '--- Cleanup result ---' ).
+    LOOP AT ls_del_commit_failed-ricefwmaster INTO DATA(ls_f4).
+      out->write( |  FAILED key: { ls_f4-%tky-RicefwUUID }| ).
+    ENDLOOP.
+    LOOP AT ls_del_commit_reported-ricefwmaster INTO DATA(ls_r4).
+      IF ls_r4-%msg IS BOUND.
+        out->write( |  REPORTED: { ls_r4-%msg->if_message~get_text( ) }| ).
+      ENDIF.
+    ENDLOOP.
+
+    IF ls_del_failed-ricefwmaster IS INITIAL AND ls_del_commit_failed-ricefwmaster IS INITIAL.
+      out->write( 'Cleanup: test record deleted.' ).
+    ELSE.
+      out->write( 'Cleanup FAILED — กรุณาลบ SMOKE-001 เองด้วย' ).
+    ENDIF.
+
+    out->write( `` ).
+    out->write( '=== Stage 1 Done ===' ).
+
+  ENDMETHOD.
+```
+
+### Run ผลลัพธ์สุดท้าย (ครบ ไม่มี anomaly)
+
+```
+=== RICEFW Smoke Test — Stage 1: root only ===
+พบ record เก่าค้างอยู่ 1 รายการ — ลบทั้งหมดก่อนเริ่ม test
+ลบ record เก่าทั้งหมดสำเร็จ
+--- After CREATE (modify buffer) ---
+--- After COMMIT ---
+Committed. RicefwUUID = FA163ECED1481FE1A5B29E883DD4FB36
+RicefwID = SMOKE-001  OverallStatus = OPN
+=== Negative test: empty RicefwID ===
+--- After CREATE (modify buffer, ยังไม่ commit) ---
+  FAILED entries: 0
+  REPORTED entries: 0
+  (คาดว่าว่างทั้งคู่ — validation ยังไม่รันจนกว่าจะ commit)
+--- After COMMIT (validation ควรรันแล้ว) ---
+  FAILED key: FA163ECED1481FE1A5B29E883DD57B36
+  REPORTED: RICEFW ID must not be initial
+Correctly rejected at COMMIT.
+--- Cleanup result ---
+Cleanup: test record deleted.
+=== Stage 1 Done ===
+```
+
+### บทเรียนที่เจอระหว่างทาง
+
+| ที่เขียนตอนแรก | ปัญหา | แก้เป็น |
+|---|---|---|
+| `DELETE WITH VALUE #( ( %tky = ... ) )` | EML `DELETE` ใช้ `FROM`ไม่ใช่ `WITH` (ต่างจาก `CREATE`/`UPDATE`) — error `"FROM" expected after "DELETE"` | `DELETE FROM VALUE #( ( %tky = ... ) )` |
+| เช็ค `FAILED`/`REPORTED` ทันทีหลัง `MODIFY ENTITIES` ของ negative test | **validation ที่ประกาศ `on save` รันตอน `COMMIT ENTITIES` เท่านั้น** — `MODIFY ENTITIES` แค่ใส่ buffer ยังไม่ trigger save sequence เลย เช็คตอนนั้นเลยว่างเปล่าเสมอ ไม่ว่า validation จะถูกหรือผิด | ต้อง `COMMIT ENTITIES` ก่อน แล้วเช็ค `FAILED`/`REPORTED` จาก **ผลของ COMMIT** ไม่ใช่จาก MODIFY |
+| ไม่ rollback หลัง commit ที่ fail | record ที่ fail validation (`BAD1`) **ยังค้างอยู่ใน RAP transactional buffer ต่อ** แม้ commit นั้นจะ fail ไปแล้ว — พอเรียก `COMMIT ENTITIES` รอบถัดไป (cleanup) ระบบเอา `BAD1` มา validate ซ้ำ fail ซ้ำอีกรอบ ทำให้ cleanup ถูกรายงานว่า FAILED ทั้งที่การลบ record จริงผ่านไปแล้ว | เรียก `ROLLBACK ENTITIES.` ทันทีหลังยืนยันว่า commit ที่ fail เป็นผลที่ถูกต้องแล้ว (negative test ทำหน้าที่เสร็จ) เพื่อล้าง buffer ก่อนทำ operation ถัดไป |
+| `ls_mapped-ricefwmaster[ %cid = 'ROOT1' ]` (table expression ไม่ระบุ key) | compiler warning: *"An initial part of the secondary key 'CID' with type SORTED is covered. However, 'CID' is not used in the statement."* — type ของ `MAPPED-ricefwmaster` มี secondary key ชื่อ `cid` อยู่แล้ว แต่ไม่ได้สั่งใช้ตรงๆ (เป็นแค่ performance hint ไม่ใช่ error) | `ls_mapped-ricefwmaster[ KEY cid COMPONENTS %cid = 'ROOT1' ]` — ระบุ key ให้ชัดเจน |
+| รัน test ซ้ำโดยไม่เคลียร์ record เก่าก่อน | `RicefwID = 'SMOKE-001'` ค้างจาก run ก่อนหน้า (เพราะ cleanup เคย fail) ทำให้ CREATE รอบใหม่ชน `validateRicefwId` duplicate check | เพิ่ม step 0: `SELECT` หา UUID ทุก record ที่ค้างจาก `YR_RICEFW` (business-key lookup ต้องใช้ SELECT ธรรมดา เพราะ `READ ENTITIES` อ้างด้วย `%tky` เท่านั้น) แล้วลบทั้งหมดแบบ batch (`FOR ... IN ... ( ... )` ใน `VALUE #`) ก่อนเริ่ม test — ทำให้ script idempotent รันซ้ำกี่ครั้งก็ได้ |
+
+### 💡 ข้อสรุปสำคัญ: `on save` = ช่วง `COMMIT ENTITIES` ไม่ใช่ `MODIFY ENTITIES`
+
+`MODIFY ENTITIES` มีหน้าที่แค่ใส่ข้อมูลเข้า **transactional buffer ในหน่วยความจำ** เท่านั้น
+ไม่ trigger `determination`/`validation` ที่ประกาศเป็น `on save` เลย — พวกนี้จะรันจริงตอน
+`COMMIT ENTITIES` (ช่วง "save sequence") เท่านั้น ผลตามมา 2 อย่างที่ต้องจำ:
+
+1. จะเช็คว่า validation reject หรือไม่ ต้อง `COMMIT ENTITIES` ก่อนเสมอ เช็คจาก `MODIFY` เพียว ๆ
+   จะได้ผลลัพธ์ว่างเปล่าเสมอไม่ว่า input จะถูกหรือผิด
+2. commit ที่ fail ไม่ได้ clear ตัวเองออกจาก buffer อัตโนมัติ (เพื่อรองรับ use case จริงของ
+   Fiori ที่ draft ต้องค้างให้ user แก้ต่อได้) — ถ้าไม่ต้องการ retry ต้องสั่ง `ROLLBACK ENTITIES`
+   เอง ไม่งั้น record ที่ fail จะถูกเอามา re-validate ซ้ำในทุก `COMMIT ENTITIES` ถัดไปในรอบ
+   เดียวกัน
+
+### Checklist Stage 1
+
+- [x] CREATE root entity (ไม่มี child)
+- [x] COMMIT — ยืนยัน `setInitialStatus` ทำงานจริงผ่าน EML (`OverallStatus = OPN`)
+- [x] READ ENTITIES กลับมาเช็คค่า
+- [x] Negative test — `validateRicefwId` reject ค่าว่างถูกต้อง (ยืนยันผ่าน COMMIT ไม่ใช่ MODIFY)
+- [x] `ROLLBACK ENTITIES` เคลียร์ buffer หลัง commit ที่ fail
+- [x] DELETE + COMMIT cleanup — idempotent รันซ้ำได้เรื่อย ๆ
+
+---
+
+## 5.7 — Smoke Test Stage 2: Deep-create (root + Owner child ในคำสั่งเดียว) ✅
+
+เพิ่ม private method `stage2_deep_create` ใน `YCL_RICEFW_EML_TEST` เรียกต่อจาก Stage 1
+ใน `MAIN` — ทดสอบสร้าง root + child `Owner` ผ่าน **`MODIFY ENTITIES` คำสั่งเดียว** (ไม่ใช่
+commit แยกกัน) เพื่อพิสูจน์ true deep-create ที่เป็นเป้าหมายเดิมของ Stage 2
+
+### 💡 ข้อค้นพบสำคัญที่สุดของ session: โครงสร้าง `CREATE BY \_Assoc` เป็น 2 ชั้น ไม่ใช่ flat
+
+ตอนแรกเขียน field ของ child (`OwnerID` ฯลฯ) เป็น named component ระดับเดียวกับ `%cid_ref`
+โดยตรง — activate ผ่าน (ADT ไม่ error ตอนนั้นเพราะยังไม่เจอ field จริง) แต่พอ error ขึ้นจริง
+กลับพบว่า **field ธุรกิจของ child ไม่ได้อยู่ระดับเดียวกับ `%cid_ref`/`%tky`** ต้องเข้าไปอยู่ใน
+sub-structure ชื่อ **`%target`** อีกชั้นหนึ่ง:
+
+```abap
+" ผิด — field ของ child (OwnerID ฯลฯ) แบนราบกับ %cid_ref
+CREATE BY \_Owner
+  FIELDS ( OwnerID OwnerName Role Progress )
+  WITH VALUE #( ( %cid_ref  = 'ROOT2'
+                   OwnerID   = 'OWN-001'    " ❌ No component exists with the name "OWNERID"
+                   ... ) )
+
+" ถูก — field ของ child ต้องอยู่ใน %target (internal table ซ้อนอีกชั้น)
+CREATE BY \_Owner
+  FIELDS ( OwnerID OwnerName Role Progress )
+  WITH VALUE #( ( %cid_ref = 'ROOT2'                    " ชั้นนอก = ระบุ parent
+                   %target  = VALUE #( ( %cid      = 'OWNER1'   " ชั้นใน = field ของ child
+                                          OwnerID   = 'OWN-001'
+                                          OwnerName = 'Somchai Test'
+                                          Role      = 'PM'
+                                          Progress  = 0 ) ) ) )
+```
+
+**โครงสร้าง**:
+- **ชั้นนอก** (row ของ `CREATE BY \_Assoc`) มีแค่ meta field สำหรับระบุ parent เท่านั้น:
+  `%cid_ref` (parent ยังไม่ commit ในคำสั่งเดียวกัน — อ้างผ่าน `%cid`) หรือ `%tky`
+  (parent commit ไปแล้วจริง มี key จริง) — **ไม่มี `%cid` ของตัวเองที่ชั้นนี้**
+- **`%target`** = internal table ของ instance ที่จะสร้างจริง (รองรับสร้างหลาย child
+  ในคำสั่งเดียวได้ — เป็น table ไม่ใช่ structure เดี่ยว) — field ธุรกิจทั้งหมดของ child
+  รวมถึง `%cid` ของ child เอง (ถ้าต้องการอ้างอิงผ่าน `MAPPED` ทีหลัง) อยู่ **ในนี้**
+
+**วิธีที่เจอ**: กด Ctrl+Space ที่ตำแหน่ง row ของ `CREATE BY \_Owner` แล้วเห็น component
+list จริง (`%cid_ref` `%is_draft` `%key` `%pky` `%target` `%tky`) — ไม่มี field ธุรกิจให้เลือก
+เลยสักตัว จุดนี้เป็นเบาะแสว่าต้องมีอีกชั้นซ่อนอยู่ ลองใช้ `%target` ตามที่เห็นใน list แล้ว
+activate ผ่านทันที (ก่อนหน้านั้นเดาผิดไป 2 รอบ: ลองใส่ `%cid` ตรงๆ ที่ชั้นนอก — ไม่มีอยู่จริง
+เดาว่า parenthesis หลุด — ไม่ใช่สาเหตุจริง)
+
+**Root ก็ใช้ pattern เดียวกันตอนอ้างถึง parent ที่ commit แล้ว**: เปลี่ยนจาก
+`%cid_ref = 'ROOT2'` เป็น `%tky = ls_root_key` ถ้า parent มี key จริงแล้ว (ทดสอบแยกไว้ก่อน
+ระหว่างที่ยังไม่รู้เรื่อง `%target` — ดูหัวข้อถัดไป)
+
+### bdef ไม่ต้องแก้อะไรเลย — `%target` เป็นเรื่องของ syntax EML ล้วน ๆ
+
+ไม่ต้องเพิ่ม/แก้ annotation หรือ association ใน `YR_RICEFW` bdef ที่มีอยู่แล้วเลย
+`CREATE BY \_Owner` ใช้ association `_Owner { create; with draft; }` ที่ประกาศไว้ตั้งแต่ 5.1
+ได้ทันที — เป็นแค่เรื่อง EML statement syntax ฝั่ง console class เท่านั้น
+
+### Source `stage2_deep_create` (declaration ดูที่ §5.6 — โครงสร้าง class)
+
+```abap
+METHOD stage2_deep_create.
+
+  out->write( `` ).
+  out->write( '=== RICEFW Smoke Test — Stage 2: deep-create (root + Owner ในคำสั่งเดียว) ===' ).
+  out->write( `` ).
+
+  "----------------------------------------------------------------
+  " 0) Pre-cleanup — ลบ SMOKE-002 เก่าถ้ามีค้าง
+  "    ลบ root จะ cascade ลบ child ทั้งหมดเองอยู่แล้ว (composition)
+  "----------------------------------------------------------------
+  SELECT RicefwUUID
+    FROM YR_RICEFW
+    WHERE RicefwID = 'SMOKE-002'
+    INTO TABLE @DATA(lt_old_uuid).
+
+  IF lt_old_uuid IS NOT INITIAL.
+    MODIFY ENTITIES OF yr_ricefw
+      ENTITY RicefwMaster
+        DELETE
+        FROM VALUE #( FOR ls_uuid IN lt_old_uuid
+                       ( %tky = VALUE #( RicefwUUID = ls_uuid-RicefwUUID ) ) )
+      FAILED   DATA(ls_pre_failed)
+      REPORTED DATA(ls_pre_reported).
+
+    COMMIT ENTITIES
+      RESPONSE OF yr_ricefw
+      FAILED   DATA(ls_pre_commit_failed)
+      REPORTED DATA(ls_pre_commit_reported).
+
+    out->write( |พบ record เก่า SMOKE-002 { lines( lt_old_uuid ) } รายการ — ลบก่อนเริ่ม test| ).
+    out->write( `` ).
+  ENDIF.
+
+  "----------------------------------------------------------------
+  " 1) Deep create — root + Owner child ในคำสั่งเดียว
+  "    โครงสร้าง 2 ชั้นของ CREATE BY \_Owner:
+  "      ชั้นนอก  = ระบุ parent (%cid_ref ชี้กลับไปที่ %cid ของ root ในคำสั่งเดียวกัน)
+  "      %target = internal table ของ child ที่จะสร้าง — field ของ Owner อยู่ในนี้
+  "----------------------------------------------------------------
+  MODIFY ENTITIES OF yr_ricefw
+    ENTITY RicefwMaster
+      CREATE FIELDS ( RicefwID RicefwType DeliveryType Description
+                       PlanStart PlanFinish )
+      WITH VALUE #( ( %cid         = 'ROOT2'
+                       RicefwID     = 'SMOKE-002'
+                       RicefwType   = 'RPT'
+                       DeliveryType = 'NEW'
+                       Description  = 'Smoke test deep-create'
+                       PlanStart    = '20260101'
+                       PlanFinish   = '20260201' ) )
+      CREATE BY \_Owner
+        FIELDS ( OwnerID OwnerName Role Progress )
+        WITH VALUE #( ( %cid_ref = 'ROOT2'
+                         %target  = VALUE #( ( %cid      = 'OWNER1'
+                                                OwnerID   = 'OWN-001'
+                                                OwnerName = 'Somchai Test'
+                                                Role      = 'PM'
+                                                Progress  = 0 ) ) ) )
+    MAPPED   DATA(ls_mapped)
+    FAILED   DATA(ls_failed)
+    REPORTED DATA(ls_reported).
+
+  out->write( '--- After deep CREATE (modify buffer) ---' ).
+  out->write( |  FAILED root entries: { lines( ls_failed-ricefwmaster ) }| ).
+  out->write( |  FAILED owner entries: { lines( ls_failed-owner ) }| ).
+  LOOP AT ls_reported-ricefwmaster INTO DATA(ls_r_root).
+    IF ls_r_root-%msg IS BOUND.
+      out->write( |  REPORTED (root): { ls_r_root-%msg->if_message~get_text( ) }| ).
+    ENDIF.
+  ENDLOOP.
+  LOOP AT ls_reported-owner INTO DATA(ls_r_owner).
+    IF ls_r_owner-%msg IS BOUND.
+      out->write( |  REPORTED (owner): { ls_r_owner-%msg->if_message~get_text( ) }| ).
+    ENDIF.
+  ENDLOOP.
+
+  IF ls_failed-ricefwmaster IS NOT INITIAL OR ls_failed-owner IS NOT INITIAL.
+    out->write( 'Deep CREATE failed — stopping Stage 2.' ).
+    ROLLBACK ENTITIES.
+    RETURN.
+  ENDIF.
+
+  "----------------------------------------------------------------
+  " 2) Commit — validation/determination ทั้งหมด (root + child) รันตอนนี้
+  "----------------------------------------------------------------
+  COMMIT ENTITIES
+    RESPONSE OF yr_ricefw
+    FAILED   DATA(ls_commit_failed)
+    REPORTED DATA(ls_commit_reported).
+
+  out->write( `` ).
+  out->write( '--- After COMMIT ---' ).
+  out->write( |  FAILED root entries: { lines( ls_commit_failed-ricefwmaster ) }| ).
+  out->write( |  FAILED owner entries: { lines( ls_commit_failed-owner ) }| ).
+  LOOP AT ls_commit_reported-ricefwmaster INTO DATA(ls_cr_root).
+    IF ls_cr_root-%msg IS BOUND.
+      out->write( |  REPORTED (root): { ls_cr_root-%msg->if_message~get_text( ) }| ).
+    ENDIF.
+  ENDLOOP.
+  LOOP AT ls_commit_reported-owner INTO DATA(ls_cr_owner).
+    IF ls_cr_owner-%msg IS BOUND.
+      out->write( |  REPORTED (owner): { ls_cr_owner-%msg->if_message~get_text( ) }| ).
+    ENDIF.
+  ENDLOOP.
+
+  IF ls_commit_failed-ricefwmaster IS NOT INITIAL OR ls_commit_failed-owner IS NOT INITIAL.
+    out->write( 'COMMIT failed — stopping Stage 2.' ).
+    ROLLBACK ENTITIES.
+    RETURN.
+  ENDIF.
+
+  DATA(ls_root_key) = VALUE #( ls_mapped-ricefwmaster[ KEY cid COMPONENTS %cid = 'ROOT2' ]-%tky OPTIONAL ).
+  DATA(ls_owner_key) = VALUE #( ls_mapped-owner[ KEY cid COMPONENTS %cid = 'OWNER1' ]-%tky OPTIONAL ).
+  out->write( |Committed. Root RicefwUUID = { ls_root_key-RicefwUUID }| ).
+  out->write( |            Owner OwnerUUID = { ls_owner_key-OwnerUUID }| ).
+
+  "----------------------------------------------------------------
+  " 3) Read กลับมาเช็คว่า child ถูกสร้างจริง และ RicefwUUID ถูกเติมให้อัตโนมัติ
+  "    (field ( readonly ) RicefwUUID ใน bdef — RAP เติมเองผ่าน composition)
+  "----------------------------------------------------------------
+  READ ENTITIES OF yr_ricefw
+    ENTITY RicefwMaster
+      BY \_Owner
+      ALL FIELDS
+      WITH VALUE #( ( %tky = ls_root_key ) )
+    RESULT DATA(lt_owner_check).
+
+  out->write( `` ).
+  IF lt_owner_check IS INITIAL.
+    out->write( 'WARNING: ไม่พบ Owner child เลย — deep-create อาจไม่สำเร็จจริง' ).
+  ELSE.
+    LOOP AT lt_owner_check INTO DATA(ls_owner_check).
+      out->write( |Owner: OwnerID = { ls_owner_check-OwnerID }  Name = { ls_owner_check-OwnerName }  Role = { ls_owner_check-Role }| ).
+      IF ls_owner_check-RicefwUUID = ls_root_key-RicefwUUID.
+        out->write( '  RicefwUUID ตรงกับ root — composition เติม FK ให้ถูกต้อง' ).
+      ELSE.
+        out->write( |  WARNING: RicefwUUID ไม่ตรงกับ root! ({ ls_owner_check-RicefwUUID })| ).
+      ENDIF.
+    ENDLOOP.
+  ENDIF.
+
+  "----------------------------------------------------------------
+  " 4) Cleanup — ลบ root แล้วเช็คว่า child ถูก cascade ลบตามไปด้วยจริง
+  "----------------------------------------------------------------
+  out->write( `` ).
+  MODIFY ENTITIES OF yr_ricefw
+    ENTITY RicefwMaster
+      DELETE
+      FROM VALUE #( ( %tky = ls_root_key ) )
+    FAILED   DATA(ls_del_failed)
+    REPORTED DATA(ls_del_reported).
+
+  COMMIT ENTITIES
+    RESPONSE OF yr_ricefw
+    FAILED   DATA(ls_del_commit_failed)
+    REPORTED DATA(ls_del_commit_reported).
+
+  out->write( '--- Cleanup result ---' ).
+  LOOP AT ls_del_commit_reported-ricefwmaster INTO DATA(ls_dr_root).
+    IF ls_dr_root-%msg IS BOUND.
+      out->write( |  REPORTED: { ls_dr_root-%msg->if_message~get_text( ) }| ).
+    ENDIF.
+  ENDLOOP.
+
+  IF ls_del_failed-ricefwmaster IS INITIAL AND ls_del_commit_failed-ricefwmaster IS INITIAL.
+    out->write( 'Cleanup: root deleted.' ).
+
+    " ยืนยัน cascade delete — child ต้องหายตามไปด้วย
+    SELECT COUNT(*)
+      FROM yricefw_owner
+      WHERE ricefw_uuid = @ls_root_key-RicefwUUID
+      INTO @DATA(lv_owner_left).
+
+    IF lv_owner_left = 0.
+      out->write( 'Cascade delete ทำงานถูกต้อง — Owner child ถูกลบตาม root ไปด้วย' ).
+    ELSE.
+      out->write( |WARNING: ยังเหลือ Owner child ค้างอยู่ { lv_owner_left } รายการ| ).
+    ENDIF.
+  ELSE.
+    out->write( 'Cleanup FAILED — กรุณาลบ SMOKE-002 เองด้วย' ).
+  ENDIF.
+
+  out->write( `` ).
+  out->write( '=== Stage 2 Done ===' ).
+
+ENDMETHOD.
+```
+
+### Run ผลลัพธ์สุดท้าย (ครบ ไม่มี anomaly)
+
+```
+=== RICEFW Smoke Test — Stage 2: deep-create (root + Owner ในคำสั่งเดียว) ===
+--- After deep CREATE (modify buffer) ---
+  FAILED root entries: 0
+  FAILED owner entries: 0
+--- After COMMIT ---
+  FAILED root entries: 0
+  FAILED owner entries: 0
+Committed. Root RicefwUUID = FA163ECED1481FE1A5B3CA3DF9A5FB36
+            Owner OwnerUUID = FA163ECED1481FE1A5B3CA3DF9A61B36
+Owner: OwnerID = OWN-001  Name = Somchai Test  Role = PM
+  RicefwUUID ตรงกับ root — composition เติม FK ให้ถูกต้อง
+--- Cleanup result ---
+Cleanup: root deleted.
+Cascade delete ทำงานถูกต้อง — Owner child ถูกลบตาม root ไปด้วย
+=== Stage 2 Done ===
+```
+
+ยืนยันครบทุกจุด: deep-create atomic ในคำสั่งเดียว, `%cid`/`%cid_ref` resolve ข้าม entity
+ถูกต้อง, FK (`RicefwUUID`) auto-fill ผ่าน composition ถูกต้อง, cascade delete ทำงานจริง
+ที่ระดับ database (ไม่ใช่แค่ผ่าน CDS view)
+
+### Checklist Stage 1 + 2
+
+- [x] **Stage 1**: CREATE root entity (ไม่มี child)
+- [x] COMMIT — ยืนยัน `setInitialStatus` ทำงานจริงผ่าน EML (`OverallStatus = OPN`)
+- [x] READ ENTITIES กลับมาเช็คค่า
+- [x] Negative test — `validateRicefwId` reject ค่าว่างถูกต้อง (ยืนยันผ่าน COMMIT ไม่ใช่ MODIFY)
+- [x] `ROLLBACK ENTITIES` เคลียร์ buffer หลัง commit ที่ fail
+- [x] DELETE + COMMIT cleanup — idempotent รันซ้ำได้เรื่อย ๆ
+- [x] **Stage 2**: Deep-create root + Owner child ในคำสั่งเดียว — ค้นพบ pattern `%target`
+- [x] ยืนยัน FK (`RicefwUUID`) auto-fill ถูกต้องผ่าน composition
+- [x] ยืนยัน cascade delete ทำงานจริงที่ระดับ database
+
+**Smoke test ทั้ง 2 stage เสร็จสมบูรณ์ ✅ — พร้อมไป Phase 6**
+
+---
+
 ## Checklist
 
 - [x] `YR_RICEFW` bdef — 4 block (root + 3 child) mass-activate ผ่าน 0 error 0 warning
@@ -599,7 +1199,9 @@ table นั้นดูตรงๆ ดีที่สุด อย่าอ้
 - [x] **5.4** Validation `validateDates` `validateProgress` — activate ผ่าน 0 error 0 warning
       (`validateOwner` ตัดออก — ซ้ำซ้อนกับ `field ( mandatory )` จาก 5.1)
 - [x] **5.5** Unique index `YRICEFW_HDR~Y01` บน (`CLIENT`, `RICEFW_ID`) — activate ผ่าน
-- [ ] Smoke test class `YCL_RICEFW_EML_TEST` — ยังไม่ทำ (ไม่บังคับสำหรับปิด Phase 5
-      แต่แนะนำก่อนเริ่ม Phase 6)
+- [x] **5.6** Smoke test class `YCL_RICEFW_EML_TEST` (Stage 1: root only) — รันผ่านครบทุกจุด
+      ยืนยัน CRUD, determination, validation ทำงานจริงผ่าน EML
+- [x] **5.7** Smoke test Stage 2 — deep-create root + Owner child ในคำสั่งเดียว รันผ่านครบทุกจุด
+      ค้นพบ pattern `%target` สำหรับ nested create ผ่าน composition association
 
 **Phase 5 จบแล้ว ✅**
