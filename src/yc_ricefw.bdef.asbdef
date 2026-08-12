@@ -1,0 +1,44 @@
+projection;
+strict ( 2 );
+use draft;
+
+define behavior for YC_RICEFW alias RicefwMaster
+{
+  use create;
+  use update;
+  use delete;
+
+  use action Activate;
+  use action Discard;
+  use action Edit;
+  use action Resume;
+  use action Prepare;
+
+  use association _Owner { create; with draft; }
+  use association _Object { create; with draft; }
+  use association _Transport { create; with draft; }
+}
+
+define behavior for YC_RICEFW_OBJECT alias Object
+{
+  use update;
+  use delete;
+
+  use association _RicefwMaster { with draft; }
+}
+
+define behavior for YC_RICEFW_OWNER alias Owner
+{
+  use update;
+  use delete;
+
+  use association _RicefwMaster { with draft; }
+}
+
+define behavior for YC_RICEFW_TRANSPORT alias Transport
+{
+  use update;
+  use delete;
+
+  use association _RicefwMaster { with draft; }
+}
