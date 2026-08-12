@@ -306,14 +306,16 @@ Object ทั้งหมดอยู่ใน `YRICEFW` (encapsulated ✅) ไ�
 | **CDS — BO** (4) ✅ | `YR_RICEFW` `YI_RICEFW_OWNER` `YI_RICEFW_OBJECT` `YI_RICEFW_TRANSPORT` |
 | **Behavior — Root** (1) ✅ | `YR_RICEFW` (bdef) — managed, draft, 2 determination/validation ที่ root
   + 1 validation ที่ owner |
-| **CDS — Projection** (4) ⏳ | `YC_RICEFW` `YC_RICEFW_OWNER` `YC_RICEFW_OBJECT` `YC_RICEFW_TRANSPORT` |
-| **Behavior — Projection** (1) ⏳ | `YC_RICEFW` (bdef projection) |
+| **Class — Smoke Test** (1) ✅ | `YCL_RICEFW_EML_TEST` — EML console test (stage 1 root-only + stage 2 deep-create) |
+| **CDS — Projection** (4) ✅ | `YC_RICEFW` `YC_RICEFW_OWNER` `YC_RICEFW_OBJECT` `YC_RICEFW_TRANSPORT` |
+| **Behavior — Projection** (1) ✅ | `YC_RICEFW` (bdef projection) — `projection; strict(2); use draft;` |
 | **Metadata Ext** (4) ⏳ | `YC_RICEFW` `YC_RICEFW_OWNER` `YC_RICEFW_OBJECT` `YC_RICEFW_TRANSPORT` |
 | **Service** (2) ⏳ | `YUI_RICEFW` (srvd) `YUI_RICEFW_O4` (srvb) |
 
-**รวม Phase 1–5: 63 objects** — 9 domains + 9 data elements + 4 tables + 4 draft tables +
-14 value help tables + 1 index + 1 message class + 2 classes (generator + behavior pool) +
-11 CDS views (7 value help + 4 BO) + 1 behavior definition (root, 4 block)
+**รวม Phase 1–6: 69 objects** — 9 domains + 9 data elements + 4 tables + 4 draft tables +
+14 value help tables + 1 index + 1 message class + 3 classes (generator + behavior pool +
+smoke test) + 15 CDS views (7 value help + 4 BO + 4 projection) + 2 behavior definitions
+(root 4 block + projection 4 block)
 
 ### 4.2 GitHub / abapGit Mapping
 
@@ -493,11 +495,18 @@ yui_ricefw.srvd.srvdsrv        yui_ricefw_o4.srvb.xml
 > และกับ instance อื่นใน request เดียวกัน (`READ ENTITIES` ทุก key ที่ถูกแตะ) ไม่งั้นถ้า user
 > สร้าง 2 record ที่มี ID เดียวกันพร้อมกัน จะหลุดไปชนที่ DB index
 
-### Phase 6 — Projection Views & Behavior Projection
-- [ ] `YC_RICEFW`, `YC_RICEFW_OWNER`, `YC_RICEFW_OBJECT`, `YC_RICEFW_TRANSPORT`
-- [ ] `@Search.searchable` + `@Consumption.valueHelpDefinition` ผูก value help views
-- [ ] `YC_RICEFW` bdef — `projection; strict(2); use draft;`
-- **Deliverable**: projection activate ผ่าน
+### Phase 6 — Projection Views & Behavior Projection ✅ จบแล้ว
+- [x] `YC_RICEFW` (root, `provider contract transactional_query` + `@ObjectModel.semanticKey`),
+      `YC_RICEFW_OWNER`, `YC_RICEFW_OBJECT`, `YC_RICEFW_TRANSPORT`
+- [x] `@Search.searchable` + `@Consumption.valueHelpDefinition` ผูก value help ครบ 7 จุด
+- [x] `YC_RICEFW` bdef — `projection; strict(2); use draft;` (ADT generate ตรงเป๊ะ ไม่ต้องแก้)
+- [x] `@Metadata.allowExtensions: true` ทุกตัว — เตรียมทางให้ MDE ของ Phase 7
+- ⚠️ **ลบ `@Metadata.ignorePropagatedAnnotations` ที่ ADT template ใส่มาให้** — ที่ชั้น projection
+  เราต้องการให้ annotation จาก interface view ของเราเองไหลขึ้นมา (ตรงข้ามกับ Phase 4 ที่ตั้ง `true`
+  เพื่อกันของจาก `I_User`)
+- **Mass-activate**: ทั้ง 4 view อ้างอิงกันเป็นวงเหมือน Phase 4 (`redirected to composition child`
+  ↔ `redirected to parent`) ต้อง activate พร้อมกันครั้งเดียว
+- **รายละเอียดเต็ม + source ทั้ง 5 ไฟล์**: ดู `phase6_spec.md`
 
 ### Phase 7 — Metadata Extensions (UI)
 - [ ] `YC_RICEFW` MDE
