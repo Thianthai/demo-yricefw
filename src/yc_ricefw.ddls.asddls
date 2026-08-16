@@ -33,7 +33,7 @@ define root view entity YC_RICEFW
 
       @Consumption.valueHelpDefinition: [{ entity: { name: 'YI_RICEFW_STAT_VH', element: 'OverallStatus' } }]
       @ObjectModel.text.element: [ 'OverallStatusText' ]
-      @UI.textArrangement: #TEXT_FIRST //#TEXT_ONLY = "In Development" #TEXT_FIRST = "In Development (DEV)"
+      @UI.textArrangement: #TEXT_FIRST //#TEXT_ONLY = "Description Text" #TEXT_FIRST = "Description Text (Key)"
       OverallStatus,
 
       @Semantics.text: true
