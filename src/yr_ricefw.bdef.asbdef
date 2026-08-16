@@ -36,7 +36,7 @@ etag master LocalLastChangedAt    //เป็น ETag ระดับ instance �
   update;
   delete;
   determination setInitialStatus on modify { create; } //Initial status
-  validation validateRicefwId on save { create; field RicefwID; } //Check not empty/not dup
+  validation validateRicefwId on save { create; update; field RicefwID; } //Check not empty/not dup
   validation validateDates on save { create; update; field PlanStart, PlanFinish; }
 
   draft action Activate optimized;
@@ -45,8 +45,10 @@ etag master LocalLastChangedAt    //เป็น ETag ระดับ instance �
   draft action Resume;
   draft determine action Prepare
   {
-    validation validateRicefwId; //RAP อยากให้ validation แสดง error แบบ real-time ตอน user ยังพิมพ์อยู่ (ก่อนกด Activate จริง) ผ่าน draft action Prepare
-    validation validateDates;    //RAP อยากให้ validation แสดง error แบบ real-time ตอน user ยังพิมพ์อยู่ (ก่อนกด Activate จริง) ผ่าน draft action Prepare
+    //RAP อยากให้ validation แสดง error แบบ real-time ตอน user ยังพิมพ์อยู่ (ก่อนกด Activate จริง) ผ่าน draft action Prepare
+    validation validateRicefwId;       //ของ root ไม่ต้องใส่ prefix เพราะอยู่ block เดียวกันอยู่แล้ว
+    validation validateDates;          //ของ root ไม่ต้องใส่ prefix เพราะอยู่ block เดียวกันอยู่แล้ว
+    validation Owner~validateProgress; //ของ child ่ต้องใส่ prefix คือ alias ของ child entity ที่ประกาศไว้
   }
 
   association _Owner     { create; with draft; }

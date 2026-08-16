@@ -48,7 +48,7 @@ annotate entity YC_RICEFW_OWNER with
   @UI.dataPoint: { title: 'Progress', visualization: #PROGRESS, targetValue: 100 }
   @UI: {
     lineItem:       [{ position: 40, importance: #MEDIUM, type: #AS_DATAPOINT }],
-    identification: [{ position: 40, type: #AS_DATAPOINT }]
+    identification: [{ position: 40 }]
   }
   Progress;
 

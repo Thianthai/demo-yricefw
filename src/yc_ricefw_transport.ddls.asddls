@@ -16,6 +16,8 @@ define view entity YC_RICEFW_TRANSPORT
       _TransportTypeVH.Description as TransportTypeText,
 
       TransportID,
+      
+      @EndUserText.label: 'Description'
       Description,
 
       @Consumption.valueHelpDefinition: [{ entity: { name: 'YI_RICEFW_TRST_VH', element: 'TransportStatus' } }]
@@ -28,7 +30,10 @@ define view entity YC_RICEFW_TRANSPORT
 
       _TransportStatusVH.Criticality as TransportStatusCriticality,
 
+      @EndUserText.label: 'Import Sequence'
       ImportSequence,
+      
+      @EndUserText.label: 'Released On'
       ReleasedOn,
 
       CreatedBy,

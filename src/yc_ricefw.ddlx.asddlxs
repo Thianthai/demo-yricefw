@@ -6,51 +6,37 @@
     typeNamePlural: 'RICEFW Items',
     title:       { type: #STANDARD, value: 'RicefwID' },
     description: { type: #STANDARD, value: 'Description' }
-  }
+  },
+  presentationVariant: [{ sortOrder: [{ by: 'RicefwID', direction: #ASC }] }]
 }
 annotate entity YC_RICEFW with
 {
   @UI.facet: [
-    { id:       'GeneralInfo',
-      purpose:  #STANDARD,
-      type:     #IDENTIFICATION_REFERENCE,
-      label:    'General Information',
-      position: 10 },
+    /* tab เดียว ครอบ 3 section ข้างล่าง */
+    { id: 'GeneralTab', purpose: #STANDARD, type: #COLLECTION,
+      label: 'General Information', position: 10 },
 
-    { id:              'Schedule',
-      purpose:         #STANDARD,
-      type:            #FIELDGROUP_REFERENCE,
-      label:           'Schedule',
-      position:        20,
-      targetQualifier: 'Schedule' },
+    { id: 'GeneralInfo', parentId: 'GeneralTab', purpose: #STANDARD,
+      type: #IDENTIFICATION_REFERENCE,
+      label: 'General Information', position: 10 },
 
-    { id:            'OwnerFacet',
-      purpose:       #STANDARD,
-      type:          #LINEITEM_REFERENCE,
-      label:         'Owners',
-      position:      30,
-      targetElement: '_Owner' },
+    { id: 'Schedule', parentId: 'GeneralTab', purpose: #STANDARD,
+      type: #FIELDGROUP_REFERENCE,
+      label: 'Schedule', position: 20, targetQualifier: 'Schedule' },
 
-    { id:            'ObjectFacet',
-      purpose:       #STANDARD,
-      type:          #LINEITEM_REFERENCE,
-      label:         'Technical Objects',
-      position:      40,
-      targetElement: '_Object' },
+    { id: 'AdminData', parentId: 'GeneralTab', purpose: #STANDARD,
+      type: #FIELDGROUP_REFERENCE,
+      label: 'Administrative Data', position: 30, targetQualifier: 'AdminData' },
 
-    { id:            'TransportFacet',
-      purpose:       #STANDARD,
-      type:          #LINEITEM_REFERENCE,
-      label:         'Transports',
-      position:      50,
-      targetElement: '_Transport' },
+    /* tab ของ child แต่ละตัว */
+    { id: 'OwnerFacet', purpose: #STANDARD, type: #LINEITEM_REFERENCE,
+      label: 'Owners', position: 20, targetElement: '_Owner' },
 
-    { id:              'AdminData',
-      purpose:         #STANDARD,
-      type:            #FIELDGROUP_REFERENCE,
-      label:           'Administrative Data',
-      position:        60,
-      targetQualifier: 'AdminData' }
+    { id: 'ObjectFacet', purpose: #STANDARD, type: #LINEITEM_REFERENCE,
+      label: 'Technical Objects', position: 30, targetElement: '_Object' },
+
+    { id: 'TransportFacet', purpose: #STANDARD, type: #LINEITEM_REFERENCE,
+      label: 'Transports', position: 40, targetElement: '_Transport' }
   ]
 
   @UI.hidden: true
@@ -115,6 +101,7 @@ annotate entity YC_RICEFW with
   PlanFinish;
 
   @UI.fieldGroup: [{ qualifier: 'Schedule', position: 30 }]
+  @UI.multiLineText: true
   Remark;
 
   @UI.fieldGroup: [{ qualifier: 'AdminData', position: 10 }]

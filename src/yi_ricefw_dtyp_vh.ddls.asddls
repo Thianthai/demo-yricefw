@@ -2,6 +2,7 @@
 @EndUserText.label: 'Delivery Type - Value Help'
 @ObjectModel.resultSet.sizeCategory: #XS
 @Search.searchable: true
+@UI.presentationVariant: [{ sortOrder: [{ by: 'SortOrder', direction: #ASC }] }]
 define view entity YI_RICEFW_DTYP_VH
   as select from yricefw_dtyp_vh as DeliveryType
   inner join yricefw_dtyp_vht as Text on  Text.delivery_type = DeliveryType.delivery_type
@@ -13,6 +14,7 @@ define view entity YI_RICEFW_DTYP_VH
       @Search.defaultSearchElement: true
       Text.description           as Description,
 
+      @UI.hidden: true
       DeliveryType.sort_order    as SortOrder
 }
 where

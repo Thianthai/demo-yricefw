@@ -7,7 +7,10 @@ define view entity YC_RICEFW_OWNER
   key OwnerUUID,
       RicefwUUID,
 
+      @EndUserText.label: 'Owner ID'
       OwnerID,
+      
+      @EndUserText.label: 'Owner Name'
       OwnerName,
 
       @Consumption.valueHelpDefinition: [{ entity: { name: 'YI_RICEFW_ROLE_VH', element: 'Role' } }]
@@ -18,6 +21,7 @@ define view entity YC_RICEFW_OWNER
       @Semantics.text: true
       _RoleVH.Description as RoleText,
 
+      @EndUserText.label: 'Progress'
       Progress,
 
       CreatedBy,

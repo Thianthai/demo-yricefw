@@ -2,6 +2,7 @@
 @EndUserText.label: 'Transport Type - Value Help'
 @ObjectModel.resultSet.sizeCategory: #XS
 @Search.searchable: true
+@UI.presentationVariant: [{ sortOrder: [{ by: 'SortOrder', direction: #ASC }] }]
 define view entity YI_RICEFW_TTYP_VH
   as select from yricefw_ttyp_vh as TransportType
   inner join yricefw_ttyp_vht as Text on  Text.transport_type = TransportType.transport_type
@@ -13,6 +14,7 @@ define view entity YI_RICEFW_TTYP_VH
       @Search.defaultSearchElement: true
       Text.description             as Description,
 
+      @UI.hidden: true
       TransportType.sort_order     as SortOrder
 }
 where

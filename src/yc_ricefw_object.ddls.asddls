@@ -7,6 +7,7 @@ define view entity YC_RICEFW_OBJECT
   key ObjectUUID,
       RicefwUUID,
 
+      @EndUserText.label: 'Object Name'
       ObjectName,
 
       @Consumption.valueHelpDefinition: [{ entity: { name: 'YI_RICEFW_OTYP_VH', element: 'ObjectType' } }]
@@ -17,6 +18,7 @@ define view entity YC_RICEFW_OBJECT
       @Semantics.text: true
       _ObjectTypeVH.Description as ObjectTypeText,
 
+      @EndUserText.label: 'Description'
       Description,
 
       CreatedBy,

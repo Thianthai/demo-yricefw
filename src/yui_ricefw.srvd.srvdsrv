@@ -1,0 +1,14 @@
+@EndUserText.label: 'RICEFW Management - Service Definition'
+define service YUI_RICEFW {
+  expose YC_RICEFW           as RicefwMaster;
+  expose YC_RICEFW_OWNER     as RicefwOwner;
+  expose YC_RICEFW_OBJECT    as RicefwObject;
+  expose YC_RICEFW_TRANSPORT as RicefwTransport;
+  expose YI_RICEFW_TYPE_VH   as RicefwTypeVH;
+  expose YI_RICEFW_DTYP_VH   as DeliveryTypeVH;
+  expose YI_RICEFW_STAT_VH   as OverallStatusVH;
+  expose YI_RICEFW_ROLE_VH   as RoleVH;
+  expose YI_RICEFW_OTYP_VH   as ObjectTypeVH;
+  expose YI_RICEFW_TTYP_VH   as TransportTypeVH;
+  expose YI_RICEFW_TRST_VH   as TransportStatusVH;
+}

@@ -29,6 +29,7 @@ define root view entity YC_RICEFW
       _DeliveryTypeVH.Description as DeliveryTypeText,
 
       @Search.defaultSearchElement: true
+      @EndUserText.label: 'Description'
       Description,
 
       @Consumption.valueHelpDefinition: [{ entity: { name: 'YI_RICEFW_STAT_VH', element: 'OverallStatus' } }]
@@ -40,8 +41,14 @@ define root view entity YC_RICEFW
       _StatusVH.Description as OverallStatusText,
 
       _StatusVH.Criticality as OverallStatusCriticality,
+      
+      @EndUserText.label: 'Planned Start'
       PlanStart,
+      
+      @EndUserText.label: 'Planned Finish'
       PlanFinish,
+      
+      @EndUserText.label: 'Remark'
       Remark,
 
       CreatedBy,

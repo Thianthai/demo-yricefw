@@ -2,6 +2,7 @@
 @EndUserText.label: 'Role - Value Help'
 @ObjectModel.resultSet.sizeCategory: #XS
 @Search.searchable: true
+@UI.presentationVariant: [{ sortOrder: [{ by: 'SortOrder', direction: #ASC }] }]
 define view entity YI_RICEFW_ROLE_VH
   as select from yricefw_role_vh as Role
   inner join yricefw_role_vht as Text on  Text.role  = Role.role
@@ -13,6 +14,7 @@ define view entity YI_RICEFW_ROLE_VH
       @Search.defaultSearchElement: true
       Text.description as Description,
 
+      @UI.hidden: true
       Role.sort_order  as SortOrder
 }
 where
