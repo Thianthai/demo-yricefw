@@ -310,12 +310,14 @@ Object ทั้งหมดอยู่ใน `YRICEFW` (encapsulated ✅) ไ�
 | **CDS — Projection** (4) ✅ | `YC_RICEFW` `YC_RICEFW_OWNER` `YC_RICEFW_OBJECT` `YC_RICEFW_TRANSPORT` |
 | **Behavior — Projection** (1) ✅ | `YC_RICEFW` (bdef projection) — `projection; strict(2); use draft;` |
 | **Metadata Ext** (4) ✅ | `YC_RICEFW` `YC_RICEFW_OWNER` `YC_RICEFW_OBJECT` `YC_RICEFW_TRANSPORT` |
-| **Service** (2) ⏳ | `YUI_RICEFW` (srvd) `YUI_RICEFW_O4` (srvb) |
+| **Service** (2) ✅ | `YUI_RICEFW` (srvd) `YUI_RICEFW_O4` (srvb) |
 
-**รวม Phase 1–7: 73 objects** — 9 domains + 9 data elements + 4 tables + 4 draft tables +
+**รวม Phase 1–8: 75 objects** — 9 domains + 9 data elements + 4 tables + 4 draft tables +
 14 value help tables + 1 index + 1 message class + 3 classes (generator + behavior pool +
 smoke test) + 15 CDS views (7 value help + 4 BO + 4 projection) + 2 behavior definitions
-(root 4 block + projection 4 block) + 4 metadata extensions
+(root 4 block + projection 4 block) + 4 metadata extensions + 2 services (definition + binding)
+
+**สถานะ**: แอปใช้งานได้จริงตั้งแต่ต้นจนจบแล้ว — เหลือ Phase 9 (authorization) เป็นด่านสุดท้าย
 
 ### 4.2 GitHub / abapGit Mapping
 
@@ -526,12 +528,19 @@ yui_ricefw.srvd.srvdsrv        yui_ricefw_o4.srvb.xml
   ตัว code จริงในชีวิตประจำวัน (`OverallStatus`, `ObjectType`) — ตารางเต็มดู `phase7_spec.md` §5.1
 - **รายละเอียดเต็ม + source ทั้ง 4 MDE + pattern ที่ใช้ซ้ำได้**: ดู `phase7_spec.md`
 
-### Phase 8 — Service Exposure
-- [ ] Service Definition `YUI_RICEFW` — expose 4 projection views + value helps
-- [ ] Service Binding `YUI_RICEFW_O4` (OData V4 — UI)
-- [ ] Publish local service endpoint
-- [ ] Preview ใน Fiori Elements Preview
-- **Deliverable**: สร้าง/แก้/ลบ RICEFW ผ่าน UI ได้จริง
+### Phase 8 — Service Exposure ✅ จบแล้ว
+- [x] Service Definition `YUI_RICEFW` — expose 4 projection views + **value help ครบ 7 ตัว**
+      (ไม่ expose VH → F4 ตายเงียบ ไม่มี error บอก)
+- [x] Service Binding `YUI_RICEFW_O4` (OData V4 — **UI** ไม่ใช่ Web API เพราะ Web API ไม่รองรับ draft)
+- [x] **Activate ≠ Publish** — ต้องกด Publish ต่างหาก `$metadata` ถึงจะตอบ
+- [x] Preview ผ่าน — List Report + Object Page ครบ · ทดสอบ validation 4 ข้อบน UI ผ่านหมด
+- ⚠️ **alias ใน service definition + `Type` ห้ามชนกับชื่อ property** — RAP สร้างชื่อ EDM entity type
+  = `<alias>Type` · `as Transport` → `TransportType` ชนกับ property `TransportType` ทำ `$metadata`
+  พังทั้ง service · เปลี่ยนเป็น `RicefwOwner`/`RicefwObject`/`RicefwTransport` (bdef alias กับ
+  service alias คนละ namespace ไม่ต้องตรงกัน)
+- 💡 **preview พังให้เปิด `$metadata` ตรงๆ ในเบราว์เซอร์เสมอ** — หน้า Fiori preview กับ Swagger
+  test client กลืน error จริงจนเหลือแค่ 404/"UI5 component failed" ที่ไล่ต่อไม่ได้
+- **รายละเอียดเต็ม + รอบขัดหน้าจอ 8 จุด**: ดู `phase8_spec.md`
 
 ### Phase 9 — Security & Finishing
 - [ ] เปลี่ยน `@AccessControl.authorizationCheck` เป็น `#CHECK` + สร้าง DCL

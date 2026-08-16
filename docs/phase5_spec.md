@@ -508,23 +508,37 @@ ENDMETHOD.
 | `FIELDS ( PlanStart, PlanFinish )` | EML `FIELDS ( ... )` เว้นวรรคคั่น ไม่ใช่ comma (ต่างจาก `VALUE #`/`SELECT`) — บั๊กนี้ซ่อนได้นานถ้ามี field เดียว | `FIELDS ( PlanStart PlanFinish )` |
 | `LOOP ... WHERE PlanFinish < PlanStart` | `LOOP...WHERE` เทียบ component เปล่ากับ component เปล่าอีกตัวในแถวเดียวกันไม่ได้ (parser ไม่รู้ว่าฝั่งขวาอ้างถึงแถวไหน) | เปลี่ยนเป็น `LOOP` ธรรมดา + `IF` ระบุ work area ทั้งสองฝั่ง (`ls_ricefw_master-PlanFinish < ls_ricefw_master-PlanStart`) |
 
-### 💡 ข้อสังเกตเรื่อง `Prepare` — แก้ความเข้าใจจาก 5.3
+### ⚠️ ข้อสังเกตเรื่อง `Prepare` — บันทึกผิดตอนแรก แก้แล้วใน Phase 8
 
-ตอน 5.3 สรุปว่า "validation ทุกตัวต้องผูกเข้า `Prepare` ไม่งั้น warning ค้างตลอด" — **ไม่ครบถ้วน**
+**เวอร์ชันแรกของเอกสารนี้บันทึกผิด** ว่า warning *"is not assigned to any determine action"*
+ของ `validateProgress` "หายไปเองหลัง implement method โดยไม่ต้องผูกเข้า `Prepare`" และสรุปต่อ
+ว่าอาจเป็นเพราะ validation ระดับ child ระบบจัดการให้เอง
 
-`validateProgress` (อยู่บน entity **child** `Owner`) ติด warning เดียวกัน (*"is not assigned to
-any determine action"*) ตอนที่เพิ่ง declare ใน bdef **แต่พอ implement behavior pool method
-เสร็จ (สร้าง `LHC_Owner` + เขียน method จริง) warning หายไปเอง โดยไม่ได้ผูกเข้า `Prepare` เลย**
+**ข้อเท็จจริง**: warning ไม่เคยหาย — ตอนที่ตรวจน่าจะดูจังหวะที่ ADT ยังไม่ได้ re-check
+พอมาเปิด bdef อีกครั้งตอน Phase 8 warning ยังอยู่ครบ
 
-**ข้อสังเกต (ยังไม่ยืนยัน 100%)**: warning นี้อาจเป็นสัญญาณ "ยังไม่มี implementation รองรับ"
-มากกว่าจะเป็นกฎตายตัวว่าทุก validation ต้องผูก `Prepare` — หรืออาจเป็นได้ว่า validation ระดับ
-**root** (ที่ user แก้ field บน Object Page หลัก) ต้องผูกจริงเพื่อ real-time feedback แต่
-validation ระดับ **child** ระบบจัดการให้เองบางส่วน — ไม่ว่าเหตุผลจริงจะเป็นอะไร ผลลัพธ์ที่ได้
-คือ activate สะอาด ไม่มี warning ค้าง จึงถือว่าถูกต้องแล้ว
+### ✅ วิธีที่ถูกต้อง: ผูก child validation เข้า `Prepare` ด้วย `<alias>~<validation>`
 
-**Trade-off ที่ยอมรับ**: `validateProgress` จะไม่มี real-time feedback ระหว่างแก้ draft
-(เห็น error ตอนกด Activate เท่านั้น) — ยอมรับได้สำหรับ demo ถ้าต้องการ real-time จริง
-ต้องหา syntax ผูก child validation เข้า `Prepare` ที่ถูกต้องก่อน (ยังไม่ยืนยัน)
+`draft determine action Prepare` มีได้เฉพาะที่ **root** แต่อ้างถึง validation ของ **child** ได้
+ผ่าน syntax `<child alias>~<ชื่อ validation>`:
+
+```abap
+  draft determine action Prepare
+  {
+    validation validateRicefwId;          " root — ไม่ต้องใส่ prefix
+    validation validateDates;             " root
+    validation Owner~validateProgress;    " child — ใส่ alias ของ child นำหน้า
+  }
+```
+
+`Owner` คือ alias ที่ประกาศไว้ที่ `define behavior for YI_RICEFW_OWNER alias Owner`
+
+**กฎที่ถูกต้อง (แทนที่ข้อสรุปเดิมทั้งหมด)**: validation **ทุกตัว** ไม่ว่าอยู่ root หรือ child
+ต้องผูกเข้า `Prepare` ทั้งหมด ไม่งั้นจะติด warning ค้างและไม่มี real-time feedback ระหว่างแก้ draft
+
+**ผลที่ได้จริง**: `validateProgress` ทำงานทันทีตอน user พิมพ์เลข Progress เกิน 100 ในตาราง
+Owners ระหว่างแก้ draft ไม่ต้องรอกดปุ่ม Create — trade-off ที่เคยเขียนว่า "ยอมรับได้สำหรับ demo"
+จึงไม่ต้องยอมรับตั้งแต่แรก เพราะแก้ได้ด้วยบรรทัดเดียว
 
 ---
 
