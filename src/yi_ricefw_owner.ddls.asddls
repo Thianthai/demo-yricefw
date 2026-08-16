@@ -10,6 +10,9 @@ define view entity YI_RICEFW_OWNER
 
   association [0..1] to I_User as _User
     on $projection.OwnerID = _User.UserID
+    
+  association [0..1] to YI_RICEFW_ROLE_VH as _RoleVH
+    on $projection.Role = _RoleVH.Role
 {
   key owner_uuid            as OwnerUUID,
       ricefw_uuid           as RicefwUUID,
@@ -31,6 +34,7 @@ define view entity YI_RICEFW_OWNER
       /* composition parent — ใช้โดย RAP สำหรับ lock/ETag/root determination */
       _RicefwMaster,
 
-      /* เผื่อ upgrade ภายหลัง — ประกาศ association ไว้ แต่ยังไม่ expose field จาก I_User */
-      _User
+      /* เผื่อ upgrade ภายหลัง — ประกาศ association ไว้ แต่ยังไม่ expose field จาก association */
+      _User,
+      _RoleVH
 }

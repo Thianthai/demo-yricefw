@@ -7,6 +7,9 @@ define view entity YI_RICEFW_OBJECT
 
   association to parent YR_RICEFW as _RicefwMaster
     on $projection.RicefwUUID = _RicefwMaster.RicefwUUID
+    
+  association [0..1] to YI_RICEFW_OTYP_VH as _ObjectTypeVH
+    on $projection.ObjectType = _ObjectTypeVH.ObjectType
 {
   key object_uuid           as ObjectUUID,
       ricefw_uuid           as RicefwUUID,
@@ -25,5 +28,8 @@ define view entity YI_RICEFW_OBJECT
       local_last_changed_at as LocalLastChangedAt,
 
       /* composition parent — ใช้โดย RAP สำหรับ lock/ETag/root determination */
-      _RicefwMaster
+      _RicefwMaster,
+      
+      /* เผื่อ upgrade ภายหลัง — ประกาศ association ไว้ แต่ยังไม่ expose field จาก association */
+      _ObjectTypeVH
 }

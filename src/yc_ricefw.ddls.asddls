@@ -13,17 +13,33 @@ define root view entity YC_RICEFW
       RicefwID,
 
       @Consumption.valueHelpDefinition: [{ entity: { name: 'YI_RICEFW_TYPE_VH', element: 'RicefwType' } }]
+      @ObjectModel.text.element: [ 'RicefwTypeText' ]
+      @UI.textArrangement: #TEXT_ONLY //#TEXT_ONLY = "In Development" #TEXT_FIRST = "In Development (DEV)"
       RicefwType,
 
+      @Semantics.text: true
+      _TypeVH.Description as RicefwTypeText,
+
       @Consumption.valueHelpDefinition: [{ entity: { name: 'YI_RICEFW_DTYP_VH', element: 'DeliveryType' } }]
+      @ObjectModel.text.element: [ 'DeliveryTypeText' ]
+      @UI.textArrangement: #TEXT_ONLY //#TEXT_ONLY = "In Development" #TEXT_FIRST = "In Development (DEV)"
       DeliveryType,
+
+      @Semantics.text: true
+      _DeliveryTypeVH.Description as DeliveryTypeText,
 
       @Search.defaultSearchElement: true
       Description,
 
       @Consumption.valueHelpDefinition: [{ entity: { name: 'YI_RICEFW_STAT_VH', element: 'OverallStatus' } }]
+      @ObjectModel.text.element: [ 'OverallStatusText' ]
+      @UI.textArrangement: #TEXT_FIRST //#TEXT_ONLY = "In Development" #TEXT_FIRST = "In Development (DEV)"
       OverallStatus,
 
+      @Semantics.text: true
+      _StatusVH.Description as OverallStatusText,
+
+      _StatusVH.Criticality as OverallStatusCriticality,
       PlanStart,
       PlanFinish,
       Remark,

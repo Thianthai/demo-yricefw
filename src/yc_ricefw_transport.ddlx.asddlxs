@@ -1,0 +1,83 @@
+@Metadata.layer: #CORE
+
+@UI: {
+  headerInfo: {
+    typeName:       'Transport',
+    typeNamePlural: 'Transports',
+    title:       { type: #STANDARD, value: 'TransportID' },
+    description: { type: #STANDARD, value: 'Description' }
+  }
+}
+annotate entity YC_RICEFW_TRANSPORT with
+{
+  @UI.facet: [
+    { id:       'TransportDetail',
+      purpose:  #STANDARD,
+      type:     #IDENTIFICATION_REFERENCE,
+      label:    'Transport Details',
+      position: 10 }
+  ]
+
+  @UI.hidden: true
+  TransportUUID;
+
+  @UI.hidden: true
+  RicefwUUID;
+
+  @UI: {
+    lineItem:       [{ position: 10, importance: #HIGH }],
+    identification: [{ position: 10 }]
+  }
+  TransportType;
+
+  @UI.hidden: true
+  TransportTypeText;
+  
+  @UI: {
+    lineItem:       [{ position: 20, importance: #HIGH }],
+    identification: [{ position: 20 }]
+  }
+  TransportID;
+
+  @UI: {
+    lineItem:       [{ position: 30, importance: #MEDIUM }],
+    identification: [{ position: 30 }]
+  }
+  Description;
+
+  @UI: {
+    lineItem:       [{ position: 40, importance: #HIGH, criticality: 'TransportStatusCriticality' }],
+    identification: [{ position: 40, criticality: 'TransportStatusCriticality' }]
+  }
+  TransportStatus;
+
+  @UI.hidden: true
+  TransportStatusText;
+
+  @UI.hidden: true
+  TransportStatusCriticality;
+  
+  @UI: {
+    lineItem:       [{ position: 50, importance: #LOW }],
+    identification: [{ position: 50 }]
+  }
+  ImportSequence;
+
+  @UI: {
+    lineItem:       [{ position: 60, importance: #MEDIUM }],
+    identification: [{ position: 60 }]
+  }
+  ReleasedOn;
+
+  @UI.hidden: true
+  CreatedBy;
+
+  @UI.hidden: true
+  CreatedAt;
+
+  @UI.hidden: true
+  LastChangedBy;
+
+  @UI.hidden: true
+  LocalLastChangedAt;
+}

@@ -1,0 +1,59 @@
+@Metadata.layer: #CORE
+
+@UI: {
+  headerInfo: {
+    typeName:       'Technical Object',
+    typeNamePlural: 'Technical Objects',
+    title:       { type: #STANDARD, value: 'ObjectName' },
+    description: { type: #STANDARD, value: 'ObjectType' }
+  }
+}
+annotate entity YC_RICEFW_OBJECT with
+{
+  @UI.facet: [
+    { id:       'ObjectDetail',
+      purpose:  #STANDARD,
+      type:     #IDENTIFICATION_REFERENCE,
+      label:    'Object Details',
+      position: 10 }
+  ]
+
+  @UI.hidden: true
+  ObjectUUID;
+
+  @UI.hidden: true
+  RicefwUUID;
+
+  @UI: {
+    lineItem:       [{ position: 10, importance: #HIGH }],
+    identification: [{ position: 10 }]
+  }
+  ObjectName;
+
+  @UI: {
+    lineItem:       [{ position: 20, importance: #HIGH }],
+    identification: [{ position: 20 }]
+  }
+  ObjectType;
+
+  @UI.hidden: true
+  ObjectTypeText;
+  
+  @UI: {
+    lineItem:       [{ position: 30, importance: #MEDIUM }],
+    identification: [{ position: 30 }]
+  }
+  Description;
+
+  @UI.hidden: true
+  CreatedBy;
+
+  @UI.hidden: true
+  CreatedAt;
+
+  @UI.hidden: true
+  LastChangedBy;
+
+  @UI.hidden: true
+  LocalLastChangedAt;
+}

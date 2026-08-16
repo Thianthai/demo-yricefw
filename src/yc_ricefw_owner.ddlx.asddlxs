@@ -1,0 +1,66 @@
+@Metadata.layer: #CORE
+
+@UI: {
+  headerInfo: {
+    typeName:       'Owner',
+    typeNamePlural: 'Owners',
+    title:       { type: #STANDARD, value: 'OwnerName' },
+    description: { type: #STANDARD, value: 'Role' }
+  }
+}
+annotate entity YC_RICEFW_OWNER with
+{
+  @UI.facet: [
+    { id:       'OwnerDetail',
+      purpose:  #STANDARD,
+      type:     #IDENTIFICATION_REFERENCE,
+      label:    'Owner Details',
+      position: 10 }
+  ]
+
+  @UI.hidden: true
+  OwnerUUID;
+
+  @UI.hidden: true
+  RicefwUUID;
+
+  @UI: {
+    lineItem:       [{ position: 10, importance: #HIGH }],
+    identification: [{ position: 10 }]
+  }
+  OwnerID;
+
+  @UI: {
+    lineItem:       [{ position: 20, importance: #HIGH }],
+    identification: [{ position: 20 }]
+  }
+  OwnerName;
+
+  @UI: {
+    lineItem:       [{ position: 30, importance: #HIGH }],
+    identification: [{ position: 30 }]
+  }
+  Role;
+
+  @UI.hidden: true
+  RoleText;
+  
+  @UI.dataPoint: { title: 'Progress', visualization: #PROGRESS, targetValue: 100 }
+  @UI: {
+    lineItem:       [{ position: 40, importance: #MEDIUM, type: #AS_DATAPOINT }],
+    identification: [{ position: 40, type: #AS_DATAPOINT }]
+  }
+  Progress;
+
+  @UI.hidden: true
+  CreatedBy;
+
+  @UI.hidden: true
+  CreatedAt;
+
+  @UI.hidden: true
+  LastChangedBy;
+
+  @UI.hidden: true
+  LocalLastChangedAt;
+}

@@ -8,13 +8,25 @@ define view entity YC_RICEFW_TRANSPORT
       RicefwUUID,
 
       @Consumption.valueHelpDefinition: [{ entity: { name: 'YI_RICEFW_TTYP_VH', element: 'TransportType' } }]
+      @ObjectModel.text.element: [ 'TransportTypeText' ]
+      @UI.textArrangement: #TEXT_ONLY //#TEXT_ONLY = "In Development" #TEXT_FIRST = "In Development (DEV)"
       TransportType,
+
+      @Semantics.text: true
+      _TransportTypeVH.Description as TransportTypeText,
 
       TransportID,
       Description,
 
       @Consumption.valueHelpDefinition: [{ entity: { name: 'YI_RICEFW_TRST_VH', element: 'TransportStatus' } }]
+      @ObjectModel.text.element: [ 'TransportStatusText' ]
+      @UI.textArrangement: #TEXT_ONLY //#TEXT_ONLY = "In Development" #TEXT_FIRST = "In Development (DEV)"
       TransportStatus,
+
+      @Semantics.text: true
+      _TransportStatusVH.Description as TransportStatusText,
+
+      _TransportStatusVH.Criticality as TransportStatusCriticality,
 
       ImportSequence,
       ReleasedOn,

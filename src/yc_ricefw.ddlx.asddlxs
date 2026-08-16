@@ -1,0 +1,134 @@
+@Metadata.layer: #CORE
+
+@UI: {
+  headerInfo: {
+    typeName:       'RICEFW Item',
+    typeNamePlural: 'RICEFW Items',
+    title:       { type: #STANDARD, value: 'RicefwID' },
+    description: { type: #STANDARD, value: 'Description' }
+  }
+}
+annotate entity YC_RICEFW with
+{
+  @UI.facet: [
+    { id:       'GeneralInfo',
+      purpose:  #STANDARD,
+      type:     #IDENTIFICATION_REFERENCE,
+      label:    'General Information',
+      position: 10 },
+
+    { id:              'Schedule',
+      purpose:         #STANDARD,
+      type:            #FIELDGROUP_REFERENCE,
+      label:           'Schedule',
+      position:        20,
+      targetQualifier: 'Schedule' },
+
+    { id:            'OwnerFacet',
+      purpose:       #STANDARD,
+      type:          #LINEITEM_REFERENCE,
+      label:         'Owners',
+      position:      30,
+      targetElement: '_Owner' },
+
+    { id:            'ObjectFacet',
+      purpose:       #STANDARD,
+      type:          #LINEITEM_REFERENCE,
+      label:         'Technical Objects',
+      position:      40,
+      targetElement: '_Object' },
+
+    { id:            'TransportFacet',
+      purpose:       #STANDARD,
+      type:          #LINEITEM_REFERENCE,
+      label:         'Transports',
+      position:      50,
+      targetElement: '_Transport' },
+
+    { id:              'AdminData',
+      purpose:         #STANDARD,
+      type:            #FIELDGROUP_REFERENCE,
+      label:           'Administrative Data',
+      position:        60,
+      targetQualifier: 'AdminData' }
+  ]
+
+  @UI.hidden: true
+  RicefwUUID;
+
+  @UI: {
+    lineItem:       [{ position: 10, importance: #HIGH }],
+    identification: [{ position: 10 }],
+    selectionField: [{ position: 10 }]
+  }
+  RicefwID;
+
+  @UI: {
+    lineItem:       [{ position: 20, importance: #HIGH }],
+    identification: [{ position: 20 }],
+    selectionField: [{ position: 20 }]
+  }
+  RicefwType;
+
+  @UI.hidden: true
+  RicefwTypeText;
+  
+  @UI: {
+    lineItem:       [{ position: 30, importance: #MEDIUM }],
+    identification: [{ position: 30 }],
+    selectionField: [{ position: 30 }]
+  }
+  DeliveryType;
+
+  @UI.hidden: true
+  DeliveryTypeText;
+  
+  @UI: {
+    lineItem:       [{ position: 40, importance: #HIGH }],
+    identification: [{ position: 40 }]
+  }
+  Description;
+
+  @UI: {
+    lineItem:       [{ position: 50, importance: #HIGH, criticality: 'OverallStatusCriticality' }],
+    identification: [{ position: 50, criticality: 'OverallStatusCriticality' }],
+    selectionField: [{ position: 40 }]
+  }
+  OverallStatus;
+
+  @UI.hidden: true
+  OverallStatusText;
+
+  @UI.hidden: true
+  OverallStatusCriticality;
+  
+  @UI: {
+    lineItem:  [{ position: 60, importance: #MEDIUM }],
+    fieldGroup: [{ qualifier: 'Schedule', position: 10 }]
+  }
+  PlanStart;
+
+  @UI: {
+    lineItem:  [{ position: 70, importance: #MEDIUM }],
+    fieldGroup: [{ qualifier: 'Schedule', position: 20 }]
+  }
+  PlanFinish;
+
+  @UI.fieldGroup: [{ qualifier: 'Schedule', position: 30 }]
+  Remark;
+
+  @UI.fieldGroup: [{ qualifier: 'AdminData', position: 10 }]
+  CreatedBy;
+
+  @UI.fieldGroup: [{ qualifier: 'AdminData', position: 20 }]
+  CreatedAt;
+
+  @UI.fieldGroup: [{ qualifier: 'AdminData', position: 30 }]
+  LastChangedBy;
+
+  @UI.hidden: true
+  LastChangedAt;
+
+  @UI.hidden: true
+  LocalLastChangedAt;
+}
