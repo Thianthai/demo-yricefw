@@ -309,13 +309,13 @@ Object ทั้งหมดอยู่ใน `YRICEFW` (encapsulated ✅) ไ�
 | **Class — Smoke Test** (1) ✅ | `YCL_RICEFW_EML_TEST` — EML console test (stage 1 root-only + stage 2 deep-create) |
 | **CDS — Projection** (4) ✅ | `YC_RICEFW` `YC_RICEFW_OWNER` `YC_RICEFW_OBJECT` `YC_RICEFW_TRANSPORT` |
 | **Behavior — Projection** (1) ✅ | `YC_RICEFW` (bdef projection) — `projection; strict(2); use draft;` |
-| **Metadata Ext** (4) ⏳ | `YC_RICEFW` `YC_RICEFW_OWNER` `YC_RICEFW_OBJECT` `YC_RICEFW_TRANSPORT` |
+| **Metadata Ext** (4) ✅ | `YC_RICEFW` `YC_RICEFW_OWNER` `YC_RICEFW_OBJECT` `YC_RICEFW_TRANSPORT` |
 | **Service** (2) ⏳ | `YUI_RICEFW` (srvd) `YUI_RICEFW_O4` (srvb) |
 
-**รวม Phase 1–6: 69 objects** — 9 domains + 9 data elements + 4 tables + 4 draft tables +
+**รวม Phase 1–7: 73 objects** — 9 domains + 9 data elements + 4 tables + 4 draft tables +
 14 value help tables + 1 index + 1 message class + 3 classes (generator + behavior pool +
 smoke test) + 15 CDS views (7 value help + 4 BO + 4 projection) + 2 behavior definitions
-(root 4 block + projection 4 block)
+(root 4 block + projection 4 block) + 4 metadata extensions
 
 ### 4.2 GitHub / abapGit Mapping
 
@@ -508,15 +508,23 @@ yui_ricefw.srvd.srvdsrv        yui_ricefw_o4.srvb.xml
   ↔ `redirected to parent`) ต้อง activate พร้อมกันครั้งเดียว
 - **รายละเอียดเต็ม + source ทั้ง 5 ไฟล์**: ดู `phase6_spec.md`
 
-### Phase 7 — Metadata Extensions (UI)
-- [ ] `YC_RICEFW` MDE
+### Phase 7 — Metadata Extensions (UI) ✅ จบแล้ว
+- [x] `YC_RICEFW` MDE
   - List Report: `@UI.lineItem`, `@UI.selectionField`, `@UI.headerInfo`
-  - Object Page: `@UI.facet` (General Info / Schedule / Owners / Objects)
-  - `@UI.criticality` ผูกกับ `overall_status`
-- [ ] `YC_RICEFW_OWNER` MDE — table facet + progress indicator
-- [ ] `YC_RICEFW_OBJECT` MDE — table facet
-- [ ] `YC_RICEFW_TRANSPORT` MDE — table facet + criticality บน `transport_status`
-- **Deliverable**: annotation ครบ, ไม่มี warning
+  - Object Page: `@UI.facet` 6 ส่วน (General Info / Schedule / Owners / Objects / Transports / Admin Data)
+  - `criticality:` ผูกกับ `OverallStatus`
+- [x] `YC_RICEFW_OWNER` MDE — table facet + **progress bar** (`@UI.dataPoint` + `type: #AS_DATAPOINT`)
+- [x] `YC_RICEFW_OBJECT` MDE — table facet
+- [x] `YC_RICEFW_TRANSPORT` MDE — table facet + criticality บน `TransportStatus`
+- [x] **7.3 Text arrangement + criticality** — เพิ่ม association 7 ตัวใน interface view ทั้ง 4
+      + path element ใน projection view ทั้ง 4 (code ดิบ → ข้อความมีสี)
+- ⚠️ **path element ต้องอยู่ที่ชั้น projection เท่านั้น** — เอาขึ้น interface view จะเจอ warning
+  `does not have a mapping to table` เพราะ managed persistence หา column ที่ไม่มีจริง
+- 💡 **ยืนยันแล้วว่า projection view เขียน path expression (`_Assoc.Field as Alias`) ได้** —
+  ไม่ต้องใช้ virtual element / ABAP class ตามที่กลัวไว้ตอนแรก
+- **`@UI.textArrangement` default = `#TEXT_ONLY`** · ใช้ `#TEXT_FIRST` เฉพาะ field ที่คนพูดกันด้วย
+  ตัว code จริงในชีวิตประจำวัน (`OverallStatus`, `ObjectType`) — ตารางเต็มดู `phase7_spec.md` §5.1
+- **รายละเอียดเต็ม + source ทั้ง 4 MDE + pattern ที่ใช้ซ้ำได้**: ดู `phase7_spec.md`
 
 ### Phase 8 — Service Exposure
 - [ ] Service Definition `YUI_RICEFW` — expose 4 projection views + value helps
