@@ -45,7 +45,7 @@ define root view entity YR_RICEFW
       _Object,
       _Transport,
       
-      /* เผื่อ upgrade ภายหลัง — ประกาศ association ไว้ แต่ยังไม่ expose field จาก association */
+      /* value help — expose Description/Criticality ที่ชั้น projection (YC_*) */
       _StatusVH,
       _TypeVH,
       _DeliveryTypeVH

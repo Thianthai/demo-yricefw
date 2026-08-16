@@ -36,5 +36,7 @@ define view entity YI_RICEFW_OWNER
 
       /* เผื่อ upgrade ภายหลัง — ประกาศ association ไว้ แต่ยังไม่ expose field จาก association */
       _User,
+      
+      /* value help — expose Description/Criticality ที่ชั้น projection (YC_*) */
       _RoleVH
 }

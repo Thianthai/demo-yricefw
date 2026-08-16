@@ -12,7 +12,7 @@ define view entity YC_RICEFW_OWNER
 
       @Consumption.valueHelpDefinition: [{ entity: { name: 'YI_RICEFW_ROLE_VH', element: 'Role' } }]
       @ObjectModel.text.element: [ 'RoleText' ]
-      @UI.textArrangement: #TEXT_ONLY //#TEXT_ONLY = "In Development" #TEXT_FIRST = "In Development (DEV)"
+      @UI.textArrangement: #TEXT_ONLY //#TEXT_ONLY = "Description Text" #TEXT_FIRST = "Description Text (Key)"
       Role,
 
       @Semantics.text: true

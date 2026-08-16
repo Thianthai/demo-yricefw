@@ -14,7 +14,7 @@ define root view entity YC_RICEFW
 
       @Consumption.valueHelpDefinition: [{ entity: { name: 'YI_RICEFW_TYPE_VH', element: 'RicefwType' } }]
       @ObjectModel.text.element: [ 'RicefwTypeText' ]
-      @UI.textArrangement: #TEXT_ONLY //#TEXT_ONLY = "In Development" #TEXT_FIRST = "In Development (DEV)"
+      @UI.textArrangement: #TEXT_ONLY //#TEXT_ONLY = "Description Text" #TEXT_FIRST = "Description Text (Key)"
       RicefwType,
 
       @Semantics.text: true
@@ -22,7 +22,7 @@ define root view entity YC_RICEFW
 
       @Consumption.valueHelpDefinition: [{ entity: { name: 'YI_RICEFW_DTYP_VH', element: 'DeliveryType' } }]
       @ObjectModel.text.element: [ 'DeliveryTypeText' ]
-      @UI.textArrangement: #TEXT_ONLY //#TEXT_ONLY = "In Development" #TEXT_FIRST = "In Development (DEV)"
+      @UI.textArrangement: #TEXT_ONLY //#TEXT_ONLY = "Description Text" #TEXT_FIRST = "Description Text (Key)"
       DeliveryType,
 
       @Semantics.text: true

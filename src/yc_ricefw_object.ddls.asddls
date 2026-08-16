@@ -11,7 +11,7 @@ define view entity YC_RICEFW_OBJECT
 
       @Consumption.valueHelpDefinition: [{ entity: { name: 'YI_RICEFW_OTYP_VH', element: 'ObjectType' } }]
       @ObjectModel.text.element: [ 'ObjectTypeText' ]
-      @UI.textArrangement: #TEXT_ONLY //#TEXT_ONLY = "In Development" #TEXT_FIRST = "In Development (DEV)"
+      @UI.textArrangement: #TEXT_FIRST //#TEXT_ONLY = "Description Text" #TEXT_FIRST = "Description Text (Key)"
       ObjectType,
 
       @Semantics.text: true

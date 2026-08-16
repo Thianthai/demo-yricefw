@@ -30,6 +30,6 @@ define view entity YI_RICEFW_OBJECT
       /* composition parent — ใช้โดย RAP สำหรับ lock/ETag/root determination */
       _RicefwMaster,
       
-      /* เผื่อ upgrade ภายหลัง — ประกาศ association ไว้ แต่ยังไม่ expose field จาก association */
+      /* value help — expose Description/Criticality ที่ชั้น projection (YC_*) */
       _ObjectTypeVH
 }

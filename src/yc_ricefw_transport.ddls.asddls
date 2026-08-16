@@ -9,7 +9,7 @@ define view entity YC_RICEFW_TRANSPORT
 
       @Consumption.valueHelpDefinition: [{ entity: { name: 'YI_RICEFW_TTYP_VH', element: 'TransportType' } }]
       @ObjectModel.text.element: [ 'TransportTypeText' ]
-      @UI.textArrangement: #TEXT_ONLY //#TEXT_ONLY = "In Development" #TEXT_FIRST = "In Development (DEV)"
+      @UI.textArrangement: #TEXT_ONLY //#TEXT_ONLY = "Description Text" #TEXT_FIRST = "Description Text (Key)"
       TransportType,
 
       @Semantics.text: true
@@ -20,7 +20,7 @@ define view entity YC_RICEFW_TRANSPORT
 
       @Consumption.valueHelpDefinition: [{ entity: { name: 'YI_RICEFW_TRST_VH', element: 'TransportStatus' } }]
       @ObjectModel.text.element: [ 'TransportStatusText' ]
-      @UI.textArrangement: #TEXT_ONLY //#TEXT_ONLY = "In Development" #TEXT_FIRST = "In Development (DEV)"
+      @UI.textArrangement: #TEXT_ONLY //#TEXT_ONLY = "Description Text" #TEXT_FIRST = "Description Text (Key)"
       TransportStatus,
 
       @Semantics.text: true
