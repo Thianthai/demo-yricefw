@@ -307,15 +307,17 @@ Object ทั้งหมดอยู่ใน `YRICEFW` (encapsulated ✅) ไ�
 | **Behavior — Root** (1) ✅ | `YR_RICEFW` (bdef) — managed, draft, 2 determination/validation ที่ root
   + 1 validation ที่ owner |
 | **Class — Smoke Test** (1) ✅ | `YCL_RICEFW_EML_TEST` — EML console test (stage 1 root-only + stage 2 deep-create) |
+| **Class — Data Generator** (1) ✅ | `YCL_RICEFW_GEN` — demo data 10 RICEFW + 20 owner + 20 transport |
 | **CDS — Projection** (4) ✅ | `YC_RICEFW` `YC_RICEFW_OWNER` `YC_RICEFW_OBJECT` `YC_RICEFW_TRANSPORT` |
 | **Behavior — Projection** (1) ✅ | `YC_RICEFW` (bdef projection) — `projection; strict(2); use draft;` |
 | **Metadata Ext** (4) ✅ | `YC_RICEFW` `YC_RICEFW_OWNER` `YC_RICEFW_OBJECT` `YC_RICEFW_TRANSPORT` |
 | **Service** (2) ✅ | `YUI_RICEFW` (srvd) `YUI_RICEFW_O4` (srvb) |
 
-**รวม Phase 1–8: 75 objects** — 9 domains + 9 data elements + 4 tables + 4 draft tables +
-14 value help tables + 1 index + 1 message class + 3 classes (generator + behavior pool +
-smoke test) + 15 CDS views (7 value help + 4 BO + 4 projection) + 2 behavior definitions
-(root 4 block + projection 4 block) + 4 metadata extensions + 2 services (definition + binding)
+**รวม 76 objects** — 9 domains + 9 data elements + 4 tables + 4 draft tables +
+14 value help tables + 1 index + 1 message class + 4 classes (value-help generator +
+behavior pool + smoke test + data generator) + 15 CDS views (7 value help + 4 BO + 4 projection)
++ 2 behavior definitions (root 4 block + projection 4 block) + 4 metadata extensions +
+2 services (definition + binding)
 
 **สถานะ**: แอปใช้งานได้จริงตั้งแต่ต้นจนจบแล้ว — เหลือ Phase 9 (authorization) เป็นด่านสุดท้าย
 
@@ -542,9 +544,33 @@ yui_ricefw.srvd.srvdsrv        yui_ricefw_o4.srvb.xml
   test client กลืน error จริงจนเหลือแค่ 404/"UI5 component failed" ที่ไล่ต่อไม่ได้
 - **รายละเอียดเต็ม + รอบขัดหน้าจอ 8 จุด**: ดู `phase8_spec.md`
 
-### Phase 9 — Security & Finishing
+### Phase 8.5 — ทดลองใช้งานจริง (ช่วงปัจจุบัน) 🔄
+
+**ตัดสินใจ 2026-08-16: hold Phase 9 ไว้ก่อนแบบไม่มีกำหนด** เพื่อเอาแอปไปใช้งานจริงก่อน แล้วค่อย
+ปรับแก้จากประสบการณ์ใช้ — รวมถึงเพิ่มฟีเจอร์ที่ทำให้ใช้งานได้สมบูรณ์ขึ้น
+
+**เหตุผล**: Phase 9 ต้องตอบคำถาม business ("ใครสร้างได้ ใครแก้ของใครได้ ใครดูได้บ้าง")
+ซึ่งจะตอบได้แม่นขึ้นมากหลังรู้ว่า workflow จริงเป็นอย่างไร — ออกแบบ authorization ก่อนใช้งาน
+มีความเสี่ยงจะได้โมเดลที่ไม่ตรงกับการใช้จริงแล้วต้องรื้อ
+
+**ระหว่างนี้ปลอดภัย** เพราะเป็น demo app บน sandbox (`ZLOCAL`, ไม่ transport) และ
+`@AccessControl.authorizationCheck: #NOT_REQUIRED` ทั้งหมด = ทุกคนที่เข้าระบบได้เห็นหมด
+ซึ่งยอมรับได้ในบริบทนี้ **แต่ห้ามเอาไปใช้กับข้อมูลจริงก่อนทำ Phase 9**
+
+- [x] **`YCL_RICEFW_GEN`** — demo data generator: 10 RICEFW (status ครบไม่ซ้ำ) + 20 owner
+      + 20 transport · รันซ้ำได้ (ล้างของเดิมก่อนเสมอ) · **รายละเอียดชุดข้อมูลเต็ม**: ดู `data_generator.md`
+  - ⚠️ ต้องแยก 2 จังหวะ (create → commit → update status → commit) เพราะ `setInitialStatus`
+    บังคับ `OverallStatus = 'OPN'` ตอน create
+  - 💡 ใช้ `TYPE TABLE FOR CREATE yr_ricefw\_Owner` สร้าง typed table ล่วงหน้าแล้วส่งด้วย `WITH`
+    — อ่านง่ายกว่า `VALUE #(...)` inline มากเมื่อข้อมูลเยอะ
+- [ ] เก็บ feedback จากการใช้จริง แล้วปรับ UX / เพิ่มฟีเจอร์
+
+### Phase 9 — Security & Finishing ⏸️ ON HOLD
 - [ ] เปลี่ยน `@AccessControl.authorizationCheck` เป็น `#CHECK` + สร้าง DCL
 - [ ] Authorization object + `authorization master` ใน bdef
+- [ ] `create ( authorization : global )` + `get_global_authorizations`
+      (warning ค้างอยู่ที่ bdef ตั้งแต่ Phase 5 โดยตั้งใจ — เป็นหมุดเตือนว่ายังไม่ได้ทำ)
+- [ ] `get_instance_authorizations` — ตอนนี้เป็น stub ว่างตั้งแต่ Phase 5
 - [ ] IAM App (`YUI_RICEFW_O4`) → Business Catalog → Business Role
 - [ ] ABAP Unit tests ครอบ validation/determination
 - [ ] Test data generator class `YCL_RICEFW_DATA_GEN`
